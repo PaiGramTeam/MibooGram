@@ -24,7 +24,6 @@ python-dotenv = "^1.0.0"
 alembic = "^1.11.1"
 black = "^23.3.0"
 rich = "^13.5.1"
-enkanetwork-py = { git = "https://github.com/mrwan200/EnkaNetwork.py" }
 TgCrypto = { version = "^1.2.5", optional = true }
 Pyrogram = { version = "^2.0.102", optional = true }
 pytest = { version = "^7.3.0", optional = true }
@@ -45,7 +44,6 @@ pillow = "^10.0.0"
 playwright = "^1.27.1"
 aiosqlite = { extras = ["sqlite"], version = "^0.19.0" }
 simnet = { git = "https://github.com/PaiGramTeam/SIMNet" }
-gram-core = {git = "https://github.com/PaiGramTeam/GramCore.git"}
 
 [tool.poetry.extras]
 pyro = ["Pyrogram", "TgCrypto"]
