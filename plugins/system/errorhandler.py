@@ -154,7 +154,7 @@ class ErrorHandler(Plugin):
                 if message:
                     notice = self.ERROR_MSG_PREFIX + f"获取信息发生错误 错误信息为 {message} ~ 请稍后再试"
                 else:
-                    notice = self.ERROR_MSG_PREFIX + f"获取信息发生错误 请稍后再试"
+                    notice = self.ERROR_MSG_PREFIX + "获取信息发生错误 请稍后再试"
         if notice:
             self.create_notice_task(update, context, notice)
             raise ApplicationHandlerStop
@@ -242,7 +242,6 @@ class ErrorHandler(Plugin):
         # 必须 `process_` 加上 `z` 保证该函数最后一个注册
         """记录错误并发送消息通知开发人员。
         logger the error and send a telegram message to notify the developer."""
-
         logger.error("处理函数时发生异常")
         logger.exception(context.error, exc_info=(type(context.error), context.error, context.error.__traceback__))
 

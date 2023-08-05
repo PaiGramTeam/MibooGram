@@ -6,9 +6,7 @@ class TalentMaterials:
         self.amount = amount
 
     def cal_materials(self) -> List[int]:
-        """
-        :return: [摩拉，天赋书x3，怪物素材x3，皇冠，周本素材]
-        """
+        """:return: [摩拉，天赋书x3，怪物素材x3，皇冠，周本素材]"""
         cost = [0, 0, 0, 0, 0, 0, 0, 0, 0]
         cost_list = [
             [0, 0, 0, 0, 0, 0, 0, 0, 0],
