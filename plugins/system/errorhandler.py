@@ -25,7 +25,7 @@ from telegram.helpers import create_deep_linked_url
 
 from core.config import config
 from core.plugin import Plugin, error_handler
-from gram_core.services.cookies.error import CookieServiceError as PublicCookieServiceError
+from gram_core.services.cookies.error import TooManyRequestPublicCookies
 from gram_core.services.players.error import PlayerNotFoundError
 from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException, ReturnCodeError
 from modules.errorpush import (
@@ -274,9 +274,9 @@ class ErrorHandler(Plugin):
 
     @error_handler()
     async def process_public_cookies(self, update: object, context: CallbackContext):
-        if not isinstance(context.error, PublicCookieServiceError) or not isinstance(update, Update):
+        if not isinstance(context.error, TooManyRequestPublicCookies) or not isinstance(update, Update):
             return
-        self.create_notice_task(update, context, "公共Cookies池已经耗尽，请稍后重试或者绑定账号")
+        self.create_notice_task(update, context, config.notice.user_not_found)
         raise ApplicationHandlerStop
 
     @error_handler(block=False)
