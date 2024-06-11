@@ -87,13 +87,15 @@ class ErrorHandler(Plugin):
         if chat.id == user.id:
             logger.info("尝试通知用户 %s[%s] 错误信息[%s]", user.full_name, user.id, content)
         else:
-            logger.info("尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.title, chat.id, content)
+            logger.info(
+                "尝试通知用户 %s[%s] 在 %s[%s] 的错误信息[%s]", user.full_name, user.id, chat.title, chat.id, content
+            )
         try:
             if update.callback_query:
                 await update.callback_query.answer(content, show_alert=True)
                 return
             if message:
-                reply_text = await message.reply_text(content, reply_markup=buttons, allow_sending_without_reply=True)
+                reply_text = await message.reply_text(content, reply_markup=buttons)
                 if filters.ChatType.GROUPS.filter(reply_text):
                     self.add_delete_message_job(reply_text, context=context)
                     self.add_delete_message_job(message, context=context)
@@ -124,7 +126,10 @@ class ErrorHandler(Plugin):
             if exc.retcode in (10001, -100):
                 notice = self.ERROR_MSG_PREFIX + "Cookie 无效，请尝试重新绑定"
             elif exc.retcode == 10103:
-                notice = self.ERROR_MSG_PREFIX + "Cookie 有效，但没有绑定到游戏帐户，请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。"
+                notice = (
+                    self.ERROR_MSG_PREFIX
+                    + "Cookie 有效，但没有绑定到游戏帐户，请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。"
+                )
             else:
                 logger.error("未知Cookie错误", exc_info=exc)
                 notice = self.ERROR_MSG_PREFIX + f"Cookie 无效 错误信息为 {exc.original} 请尝试重新绑定"
@@ -203,9 +208,15 @@ class ErrorHandler(Plugin):
         if isinstance(exc, APIHelperTimedOut):
             notice = self.ERROR_MSG_PREFIX + " 服务器熟啦 ~ 请稍后再试"
         elif isinstance(exc, ReturnCodeError):
-            notice = self.ERROR_MSG_PREFIX + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
+            notice = (
+                self.ERROR_MSG_PREFIX
+                + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
+            )
         elif isinstance(exc, ResponseException):
-            notice = self.ERROR_MSG_PREFIX + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
+            notice = (
+                self.ERROR_MSG_PREFIX
+                + f"API请求错误 错误信息为 {exc.message if exc.message else exc.code} ~ 请稍后再试"
+            )
         if notice:
             self.create_notice_task(update, context, notice)
             raise ApplicationHandlerStop

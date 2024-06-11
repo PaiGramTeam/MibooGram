@@ -36,7 +36,9 @@ class StartPlugin(Plugin):
                     f"{escape_markdown('发送 /setuid 或 /setcookie 命令进入绑定账号流程')}"
                 )
             else:
-                await message.reply_html(f"你好 {user.mention_html()} ！我是米仔 ！\n请点击 /{args[0]} 命令进入对应流程")
+                await message.reply_html(
+                    f"你好 {user.mention_html()} ！我是米仔 ！\n请点击 /{args[0]} 命令进入对应流程"
+                )
             return
         logger.info("用户 %s[%s] 发出start命令", user.full_name, user.id)
         await message.reply_markdown_v2(f"你好 {user.mention_markdown_v2()} {escape_markdown('！我是米仔 ！')}")
