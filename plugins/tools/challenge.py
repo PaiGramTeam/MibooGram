@@ -59,7 +59,7 @@ class ChallengeSystem(Plugin):
             raise ChallengeSystemException("无需验证")
         if need_verify:
             try:
-                await client.get_genshin_notes()
+                await client.get_zzz_notes()
             except NeedChallenge:
                 pass
             else:

@@ -25,6 +25,7 @@ from telegram.helpers import create_deep_linked_url
 
 from core.config import config
 from core.plugin import Plugin, error_handler
+from gram_core.services.cookies.error import CookieServiceError as PublicCookieServiceError
 from gram_core.services.players.error import PlayerNotFoundError
 from modules.apihelper.error import APIHelperException, APIHelperTimedOut, ResponseException, ReturnCodeError
 from modules.errorpush import (
@@ -154,7 +155,7 @@ class ErrorHandler(Plugin):
             elif exc.retcode == 10103:
                 notice = (
                     self.ERROR_MSG_PREFIX
-                    + "Cookie 有效，但没有绑定到游戏帐户，请尝试登录通行证，在账号管理里面选择账号游戏信息，将原神设置为默认角色。"
+                    + "Cookie 有效，但没有绑定到游戏帐户，请尝试登录通行证，在账号管理里面选择账号游戏信息，将绝区零设置为默认角色。"
                 )
             else:
                 logger.error("未知Cookie错误", exc_info=exc)
@@ -269,6 +270,13 @@ class ErrorHandler(Plugin):
         ) or not isinstance(update, Update):
             return
         self.create_notice_task(update, context, config.notice.user_not_found)
+        raise ApplicationHandlerStop
+
+    @error_handler()
+    async def process_public_cookies(self, update: object, context: CallbackContext):
+        if not isinstance(context.error, PublicCookieServiceError) or not isinstance(update, Update):
+            return
+        self.create_notice_task(update, context, "公共Cookies池已经耗尽，请稍后重试或者绑定账号")
         raise ApplicationHandlerStop
 
     @error_handler(block=False)

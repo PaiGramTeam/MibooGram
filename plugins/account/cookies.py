@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Dict, Optional
 
 from arkowrapper import ArkoWrapper
-from simnet import GenshinClient, Region
+from simnet import ZZZClient, Region
 from simnet.errors import DataNotPublic, InvalidCookies, BadRequest as SimnetBadRequest
 from simnet.models.lab.record import Account
 from telegram import ReplyKeyboardMarkup, ReplyKeyboardRemove, TelegramObject, Update
@@ -226,7 +226,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
             logger.error("用户 %s[%s] region 异常", user.full_name, user.id)
             await message.reply_text("数据错误", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        async with GenshinClient(cookies=cookies.to_dict(), region=region) as client:
+        async with ZZZClient(cookies=cookies.to_dict(), region=region) as client:
             check_cookie = cookies.check()
             if cookies.login_ticket is not None:
                 try:
@@ -301,7 +301,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                     logger.success("获取用户 %s[%s] account_id[%s] 成功", user.full_name, user.id, account_id)
                 else:
                     account_cookies_plugin_data.account_id = client.account_id
-                genshin_accounts = await client.get_genshin_accounts()
+                genshin_accounts = await client.get_zzz_accounts()
             except DataNotPublic:
                 logger.info("用户 %s[%s] 账号疑似被注销", user.full_name, user.id)
                 await message.reply_text("账号疑似被注销，请检查账号状态", reply_markup=ReplyKeyboardRemove())
@@ -342,7 +342,7 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 level = temp.level
                 genshin_account = temp
         if genshin_account is None:
-            await message.reply_text("未找到原神账号，请确认账号信息无误。")
+            await message.reply_text("未找到绝区零账号，请确认账号信息无误。")
             return ConversationHandler.END
         account_cookies_plugin_data.genshin_account = genshin_account
         player_info = await self.players_service.get(
@@ -408,12 +408,13 @@ class AccountCookiesPlugin(Plugin.Conversation):
                 region=region,
                 is_chosen=True,  # todo 多账号
             )
-            await self.update_player_info(player_model, genshin_account.nickname)
             await self.players_service.add(player_model)
+            player = player_model
+        await self.update_player_info(player, genshin_account.nickname)
 
     async def update_player_info(self, player: Player, nickname: str):
         player_info = await self.player_info_service.get(player)
-        if player_info is None:
+        if player_info is None or player_info.create_time is None:
             player_info = PlayerInfoSQLModel(
                 user_id=player.user_id,
                 player_id=player.player_id,

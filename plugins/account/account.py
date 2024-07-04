@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Optional, TYPE_CHECKING
 
-from simnet import GenshinClient, Region
+from simnet import ZZZClient, Region
 from simnet.errors import (
     InvalidCookies,
     BadRequest as SimnetBadRequest,
@@ -149,15 +149,15 @@ class BindAccountPlugin(Plugin.Conversation):
             )
             return ConversationHandler.END
         if region == RegionEnum.HYPERION:
-            client = GenshinClient(cookies=cookies.data, region=Region.CHINESE)
+            client = ZZZClient(cookies=cookies.data, region=Region.CHINESE)
         elif region == RegionEnum.HOYOLAB:
-            client = GenshinClient(cookies=cookies.data, region=Region.OVERSEAS, lang="zh-cn")
+            client = ZZZClient(cookies=cookies.data, region=Region.OVERSEAS, lang="zh-cn")
         else:
             return ConversationHandler.END
         try:
             record_card = await client.get_record_card(account_id)
             if record_card is None:
-                await message.reply_text("请在设置展示主界面添加原神", reply_markup=ReplyKeyboardRemove())
+                await message.reply_text("请在设置展示主界面添加绝区零", reply_markup=ReplyKeyboardRemove())
                 return ConversationHandler.END
         except DataNotPublic:
             await message.reply_text("角色未公开", reply_markup=ReplyKeyboardRemove())

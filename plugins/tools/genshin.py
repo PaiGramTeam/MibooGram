@@ -6,7 +6,7 @@ from typing import Optional
 from typing import TYPE_CHECKING, Union
 
 from pydantic import ValidationError
-from simnet import GenshinClient, Region
+from simnet import ZZZClient, Region
 from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, NetworkError, CookieException, NeedChallenge
 from simnet.models.genshin.calculator import CalculatorCharacterDetails
 from simnet.models.genshin.chronicle.characters import Character
@@ -158,7 +158,7 @@ class CharacterDetails(Plugin):
         return None
 
     async def get_character_details(
-        self, client: "GenshinClient", character: "Union[int,Character]"
+        self, client: "ZZZClient", character: "Union[int,Character]"
     ) -> Optional["CalculatorCharacterDetails"]:
         """缓存 character_details 并定时对其进行数据存储 当遇到 Too Many Requests 可以获取以前的数据"""
         uid = client.player_id
@@ -220,7 +220,7 @@ class GenshinHelper(Plugin):
     @asynccontextmanager
     async def genshin(  # skipcq: PY-R1000 #
         self, user_id: int, region: Optional[RegionEnum] = None, player_id: int = None, offset: int = 0
-    ) -> GenshinClient:
+    ) -> ZZZClient:
         player = await self.players_service.get_player(user_id, region, player_id, offset)
         if player is None:
             raise PlayerNotFoundError(user_id)
@@ -246,7 +246,7 @@ class GenshinHelper(Plugin):
             device_id = devices.device_id
             device_fp = devices.device_fp
 
-        async with GenshinClient(
+        async with ZZZClient(
             cookies,
             region=region,
             account_id=player.account_id,
@@ -308,7 +308,7 @@ class GenshinHelper(Plugin):
 
     async def get_genshin_client(
         self, user_id: int, region: Optional[RegionEnum] = None, player_id: int = None, offset: int = 0
-    ) -> GenshinClient:
+    ) -> ZZZClient:
         player = await self.players_service.get_player(user_id, region, player_id, offset)
         if player is None:
             raise PlayerNotFoundError(user_id)
@@ -334,7 +334,7 @@ class GenshinHelper(Plugin):
             device_id = devices.device_id
             device_fp = devices.device_fp
 
-        return GenshinClient(
+        return ZZZClient(
             cookies,
             region=region,
             account_id=player.account_id,
@@ -347,7 +347,7 @@ class GenshinHelper(Plugin):
     @asynccontextmanager
     async def public_genshin(
         self, user_id: int, region: Optional[RegionEnum] = None, uid: Optional[int] = None
-    ) -> GenshinClient:
+    ) -> ZZZClient:
         if not (region or uid):
             player = await self.players_service.get_player(user_id, region)
             if player:
@@ -370,7 +370,7 @@ class GenshinHelper(Plugin):
             device_id = devices.device_id
             device_fp = devices.device_fp
 
-        async with GenshinClient(
+        async with ZZZClient(
             cookies.data,
             region=region,
             player_id=uid,
@@ -392,7 +392,7 @@ class GenshinHelper(Plugin):
         region: Optional[RegionEnum] = None,
         uid: Optional[int] = None,
         offset: int = 0,
-    ) -> GenshinClient:
+    ) -> ZZZClient:
         try:
             async with self.genshin(user_id, region, uid, offset) as client:
                 client.public = False

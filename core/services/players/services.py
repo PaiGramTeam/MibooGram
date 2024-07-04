@@ -1,23 +1,11 @@
 from datetime import datetime, timedelta
 from typing import Optional
 
-from enkanetwork import (
-    VaildateUIDError,
-    HTTPException,
-    EnkaPlayerNotFound,
-    PlayerInfo as EnkaPlayerInfo,
-    TimedOut,
-    EnkaServerMaintanance,
-)
-
 from core.base_service import BaseService
-from core.config import config
 from core.dependence.redisdb import RedisDB
 from core.services.players.models import PlayersDataBase as Player, PlayerInfoSQLModel, PlayerInfo
 from core.services.players.repositories import PlayerInfoRepository
 from gram_core.services.players.services import PlayersService
-from utils.enkanetwork import RedisCache, EnkaNetworkAPI
-from utils.log import logger
 
 __all__ = ("PlayersService", "PlayerInfoService")
 
@@ -26,8 +14,6 @@ class PlayerInfoService(BaseService):
     def __init__(self, redis: RedisDB, players_info_repository: PlayerInfoRepository):
         self.cache = redis.client
         self._players_info_repository = players_info_repository
-        self.enka_client = EnkaNetworkAPI(lang="chs", user_agent=config.enka_network_api_agent)
-        self.enka_client.set_cache(RedisCache(redis.client, key="players_info:enka_network", ex=60))
         self.qname = "players_info"
 
     async def get_form_cache(self, player: Player):
@@ -42,22 +28,7 @@ class PlayerInfoService(BaseService):
         qname = f"{self.qname}:{player.user_id}:{player.player_id}"
         await self.cache.set(qname, player.json(), ex=60)
 
-    async def get_player_info_from_enka(self, player_id: int) -> Optional[EnkaPlayerInfo]:
-        try:
-            response = await self.enka_client.fetch_user(player_id, info=True)
-            return response.player
-        except VaildateUIDError:
-            logger.warning("Enka.Network 请求失败 UID 不正确")
-        except EnkaPlayerNotFound:
-            logger.warning("Enka.Network 请求失败 玩家不存在")
-        except EnkaServerMaintanance:
-            logger.warning("Enka.Network 正在进行服务器维护，请耐心等待5至8小时或者1天。")
-        except TimedOut:
-            logger.warning("Enka.Network 请求超时")
-        except HTTPException as exc:
-            logger.warning("Enka.Network 请求失败: %s", str(exc))
-        except Exception as exc:
-            logger.error("Enka.Network 请求失败: %s", exc_info=exc)
+    async def get_player_info_from_enka(self, player_id: int) -> None:
         return None
 
     async def get(self, player: Player) -> Optional[PlayerInfo]:

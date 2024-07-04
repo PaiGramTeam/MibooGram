@@ -27,7 +27,7 @@ from plugins.tools.recognize import RecognizeSystem
 from utils.log import logger
 
 if TYPE_CHECKING:
-    from simnet import GenshinClient
+    from simnet import ZZZClient
     from telegram.ext import ContextTypes
 
 
@@ -106,7 +106,7 @@ class SignSystem(Plugin):
 
     async def start_sign(
         self,
-        client: "GenshinClient",
+        client: "ZZZClient",
         challenge: Optional[str] = None,
         validate: Optional[str] = None,
         is_sleep: bool = False,

@@ -2,7 +2,7 @@ import html
 from http.cookies import SimpleCookie
 from typing import Tuple, TYPE_CHECKING
 
-from simnet import Region, GenshinClient
+from simnet import Region, ZZZClient
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import filters
 from core.config import config
@@ -223,7 +223,7 @@ class PlayersManagesPlugin(Plugin):
         if cookies.stoken is not None:
             try:
                 region = Region.CHINESE if player.region.value == 1 else Region.OVERSEAS
-                async with GenshinClient(cookies=cookies.to_dict(), region=region) as client:
+                async with ZZZClient(cookies=cookies.to_dict(), region=region) as client:
                     cookies.cookie_token = await client.get_cookie_token_by_stoken()
                     logger.success("用户 %s[%s] 刷新 cookie_token 成功", user.full_name, user.id)
                     cookies.ltoken = await client.get_ltoken_by_stoken()

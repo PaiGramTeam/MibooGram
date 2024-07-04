@@ -1,4 +1,3 @@
-import asyncio
 from typing import Awaitable, Dict, List, cast, Tuple
 from uuid import uuid4
 
@@ -17,12 +16,10 @@ from telegram.constants import ParseMode
 from telegram.error import BadRequest
 from telegram.ext import CallbackContext, ContextTypes
 
-from core.dependence.assets import AssetsCouldNotFound, AssetsService
 from core.plugin import Plugin, handler
 from core.services.cookies import CookiesService
 from core.services.players import PlayersService
 from core.services.search.services import SearchServices
-from core.services.wiki.services import WikiService
 from gram_core.config import config
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from utils.log import logger
@@ -33,14 +30,10 @@ class Inline(Plugin):
 
     def __init__(
         self,
-        wiki_service: WikiService,
-        assets_service: AssetsService,
         search_service: SearchServices,
         cookies_service: CookiesService,
         players_service: PlayersService,
     ):
-        self.assets_service = assets_service
-        self.wiki_service = wiki_service
         self.weapons_list: List[Dict[str, str]] = []
         self.characters_list: List[Dict[str, str]] = []
         self.refresh_task: List[Awaitable] = []
@@ -50,41 +43,6 @@ class Inline(Plugin):
         self.inline_use_data: List[IInlineUseData] = []
         self.inline_use_data_map: Dict[str, IInlineUseData] = {}
         self.img_url = "https://i.dawnlab.me/b1bdf9cc3061d254f038e557557694bc.jpg"
-
-    async def initialize(self):
-        # todo: 整合进 wiki 或者单独模块 从Redis中读取
-        async def task_weapons():
-            logger.info("Inline 模块正在获取武器列表")
-            weapons_list = await self.wiki_service.get_weapons_name_list()
-            for weapons_name in weapons_list:
-                try:
-                    icon = await self.assets_service.weapon(weapons_name).get_link("icon")
-                except AssetsCouldNotFound:
-                    continue
-                except Exception as exc:
-                    logger.error("获取武器信息失败 %s", str(exc))
-                    continue
-                data = {"name": weapons_name, "icon": icon}
-                self.weapons_list.append(data)
-            logger.success("Inline 模块获取武器列表成功")
-
-        async def task_characters():
-            logger.info("Inline 模块正在获取角色列表")
-            characters_list = await self.wiki_service.get_characters_name_list()
-            for character_name in characters_list:
-                try:
-                    icon = await self.assets_service.avatar(character_name).get_link("icon")
-                except AssetsCouldNotFound:
-                    continue
-                except Exception as exc:
-                    logger.error("获取角色信息失败 %s", str(exc))
-                    continue
-                data = {"name": character_name, "icon": icon}
-                self.characters_list.append(data)
-            logger.success("Inline 模块获取角色列表成功")
-
-        self.refresh_task.append(asyncio.create_task(task_weapons()))
-        self.refresh_task.append(asyncio.create_task(task_characters()))
 
     async def init_inline_use_data(self):
         if self.inline_use_data:
@@ -257,19 +215,6 @@ class Inline(Plugin):
                             thumbnail_url=icon,
                             input_message_content=InputTextMessageContent(
                                 f"角色攻略查询{name}", parse_mode=ParseMode.MARKDOWN_V2
-                            ),
-                        )
-                    )
-            elif args[0] == "查看角色培养素材列表并查询":
-                characters_list = await self.wiki_service.get_characters_name_list()
-                for role_name in characters_list:
-                    results_list.append(
-                        InlineQueryResultArticle(
-                            id=str(uuid4()),
-                            title=role_name,
-                            description=f"查看角色培养素材列表并查询 {role_name}",
-                            input_message_content=InputTextMessageContent(
-                                f"角色培养素材查询{role_name}", parse_mode=ParseMode.MARKDOWN_V2
                             ),
                         )
                     )
