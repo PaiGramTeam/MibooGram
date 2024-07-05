@@ -1,19 +1,16 @@
-from metadata.pool.pool_100 import POOL_100
-from metadata.pool.pool_200 import POOL_200
-from metadata.pool.pool_301 import POOL_301
-from metadata.pool.pool_302 import POOL_302
-from metadata.pool.pool_500 import POOL_500
+from metadata.pool.pool_1 import POOL_1
+from metadata.pool.pool_2 import POOL_2
+from metadata.pool.pool_3 import POOL_3
+from metadata.pool.pool_4 import POOL_4
 
 
 def get_pool_by_id(pool_type):
-    if pool_type == 100:
-        return POOL_100
-    if pool_type == 200:
-        return POOL_200
-    if pool_type in [301, 400]:
-        return POOL_301
-    if pool_type == 302:
-        return POOL_302
-    if pool_type == 500:
-        return POOL_500
+    if pool_type == 1:
+        return POOL_1
+    if pool_type == 2:
+        return POOL_2
+    if pool_type == 3:
+        return POOL_3
+    if pool_type == 4:
+        return POOL_4
     return None
