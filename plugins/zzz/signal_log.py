@@ -153,7 +153,7 @@ class WishLogPlugin(Plugin.Conversation):
             await message.reply_text("文件解析失败，请检查文件是否符合 ZZZGF 标准")
             return
         await message.reply_chat_action(ChatAction.TYPING)
-        reply = await message.reply_text("文件解析成功，正在导入数据")
+        reply = await message.reply_text("文件解析成功，正在导入数据", reply_markup=ReplyKeyboardRemove())
         await message.reply_chat_action(ChatAction.TYPING)
         try:
             text = await self._refresh_user_data(user, player_id, data=data, verify_uid=file_type == "json")

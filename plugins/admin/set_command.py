@@ -21,6 +21,11 @@ class SetCommandPlugin(Plugin):
         user_command = [
             BotCommand("cancel", "取消操作（解决一切玄学问题）"),
             BotCommand("help_raw", "查看文本帮助"),
+            # gacha_log 相关
+            BotCommand("signal_log", "查看调频记录"),
+            BotCommand("signal_log_import", "导入调频记录"),
+            BotCommand("signal_log_export", "导出调频记录"),
+            BotCommand("signal_log_delete", "删除调频记录"),
             # Cookie 查询类
             BotCommand("sign", "米游社绝区零每日签到"),
             BotCommand("dailynote_tasks", "自动便笺提醒"),
@@ -33,6 +38,9 @@ class SetCommandPlugin(Plugin):
         group_command = [
             # 通用
             BotCommand("help", "帮助"),
+            # Wiki 类
+            BotCommand("weapon", "查看音擎图鉴"),
+            BotCommand("avatar", "查询角色攻略"),
             # UID 查询类
             BotCommand("stats", "玩家统计查询"),
             # Cookie 查询类
