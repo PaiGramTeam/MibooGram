@@ -76,7 +76,7 @@ class BindAccountPlugin(Plugin.Conversation):
             bind_account_plugin_data.reset()
         text = (
             f"你好 {user.mention_markdown_v2()} "
-            f'{escape_markdown("！请输入通行证ID（非游戏玩家ID），BOT将会通过通行证UID查找游戏UID。请选择要绑定的服务器！或回复退出取消操作")}'
+            f'{escape_markdown("！请选择要绑定的服务器！或回复退出取消操作")}'
         )
         reply_keyboard = [["米游社", "HoYoLab"], ["退出"]]
         await message.reply_markdown_v2(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True))
@@ -97,7 +97,7 @@ class BindAccountPlugin(Plugin.Conversation):
         else:
             await message.reply_text("选择错误，请重新选择")
             return CHECK_SERVER
-        reply_keyboard = [["通过玩家ID", "通过账号ID"], ["退出"]]
+        reply_keyboard = [["通过账号ID"], ["退出"]]
         await message.reply_markdown_v2(
             "请选择你要绑定的方式", reply_markup=ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
         )
@@ -110,11 +110,11 @@ class BindAccountPlugin(Plugin.Conversation):
         if message.text == "退出":
             await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        if message.text == "通过玩家ID":
-            await message.reply_text(
-                "请输入你的玩家ID（非通行证ID），此 ID 在 游戏客户端 左/右下角。", reply_markup=ReplyKeyboardRemove()
-            )
-            return CHECK_PLAYER_ID
+        # if message.text == "通过玩家ID":
+        #     await message.reply_text(
+        #         "请输入你的玩家ID（非通行证ID），此 ID 在 游戏客户端 左/右下角。", reply_markup=ReplyKeyboardRemove()
+        #     )
+        #     return CHECK_PLAYER_ID
         if message.text == "通过账号ID":
             await message.reply_text(
                 "请输入你的通行证ID（非玩家ID），此 ID 在 社区APP '我的' 页面。", reply_markup=ReplyKeyboardRemove()
@@ -262,7 +262,7 @@ class BindAccountPlugin(Plugin.Conversation):
 
     async def update_player_info(self, player: Player, nickname: str):
         player_info = await self.player_info_service.get(player)
-        if player_info is None:
+        if player_info is None or player_info.create_time is None:
             player_info = PlayerInfoSQLModel(
                 user_id=player.user_id,
                 player_id=player.player_id,
