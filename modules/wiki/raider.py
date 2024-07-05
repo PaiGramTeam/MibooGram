@@ -1,5 +1,7 @@
 import asyncio
 from typing import List, Dict
+
+from metadata.shortname import roleToName, weaponToName
 from modules.wiki.base import WikiModel
 
 
@@ -46,6 +48,10 @@ class Raider(WikiModel):
             new_data[start] = list(data[key].keys())
             tasks = []
             for name, path in data[key].items():
+                if key in {"角色", "角色攻略"}:
+                    name = roleToName(name)
+                else:
+                    name = weaponToName(name)
                 tasks.append(self.refresh_task(name, path, start))
             await asyncio.gather(*tasks)
         await self.dump(new_data, self.raider_info_path)
