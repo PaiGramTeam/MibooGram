@@ -212,7 +212,7 @@ class BindAccountPlugin(Plugin.Conversation):
             return ConversationHandler.END
         try:
             async with self.helper.public_genshin(user.id, region=region, uid=player_id) as client:
-                player_stats = await client.get_genshin_user(player_id)
+                player_stats = await client.get_zzz_user(player_id)
         except TooManyRequestPublicCookies:
             await message.reply_text("用户查询次数过多，请稍后重试", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END

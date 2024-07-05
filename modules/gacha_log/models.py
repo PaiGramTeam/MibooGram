@@ -4,15 +4,13 @@ from typing import Any, Dict, List, Union
 
 from pydantic import BaseModel, validator
 
-from metadata.shortname import not_real_roles, roleToId, weaponToId
-from modules.gacha_log.const import UIGF_VERSION
+from metadata.shortname import not_real_roles, roleToId, weaponToId, buddyToId
+from modules.gacha_log.const import ZZZGF_VERSION
 
 
 class ImportType(Enum):
     PaiGram = "PaiGram"
-    PAIMONMOE = "PAIMONMOE"
-    FXQ = "FXQ"
-    UIGF = "UIGF"
+    ZZZGF = "ZZZGF"
     UNKNOWN = "UNKNOWN"
 
 
@@ -37,27 +35,29 @@ class FourStarItem(BaseModel):
 class GachaItem(BaseModel):
     id: str
     name: str
+    gacha_id: str = ""
     gacha_type: str
+    item_id: str = ""
     item_type: str
     rank_type: str
     time: datetime.datetime
 
     @validator("name")
     def name_validator(cls, v):
-        if item_id := (roleToId(v) or weaponToId(v)):
+        if item_id := (roleToId(v) or weaponToId(v) or buddyToId(v)):
             if item_id not in not_real_roles:
                 return v
         raise ValueError(f"Invalid name {v}")
 
     @validator("gacha_type")
     def check_gacha_type(cls, v):
-        if v not in {"100", "200", "301", "302", "400", "500"}:
-            raise ValueError(f"gacha_type must be 200, 301, 302, 400, 500, invalid value: {v}")
+        if v not in {"1", "2", "3", "5"}:
+            raise ValueError(f"gacha_type must be 1, 2, 3 or 5, invalid value: {v}")
         return v
 
     @validator("item_type")
     def check_item_type(cls, item):
-        if item not in {"角色", "武器"}:
+        if item not in {"代理人", "音擎", "邦布"}:
             raise ValueError(f"error item type {item}")
         return item
 
@@ -74,11 +74,10 @@ class GachaLogInfo(BaseModel):
     update_time: datetime.datetime
     import_type: str = ""
     item_list: Dict[str, List[GachaItem]] = {
-        "角色祈愿": [],
-        "武器祈愿": [],
-        "常驻祈愿": [],
-        "新手祈愿": [],
-        "集录祈愿": [],
+        "代理人调频": [],
+        "音擎调频": [],
+        "常驻调频": [],
+        "邦布调频": [],
     }
 
     @property
@@ -131,57 +130,47 @@ class Pool:
 
 
 class ItemType(Enum):
-    CHARACTER = "角色"
-    WEAPON = "武器"
+    CHARACTER = "代理人"
+    WEAPON = "音擎"
+    BANGBOO = "邦布"
 
 
-class UIGFGachaType(Enum):
-    BEGINNER = "100"
-    STANDARD = "200"
-    CHARACTER = "301"
-    WEAPON = "302"
-    CHARACTER2 = "400"
-    CHRONICLED = "500"
+class ZZZGFGachaType(Enum):
+    STANDARD = "1"
+    CHARACTER = "2"
+    WEAPON = "3"
+    BANGBOO = "5"
 
 
-class UIGFItem(BaseModel):
+class ZZZGFItem(BaseModel):
     id: str
     name: str
     count: str = "1"
-    gacha_type: UIGFGachaType
+    gacha_id: str = ""
+    gacha_type: ZZZGFGachaType
     item_id: str = ""
     item_type: ItemType
     rank_type: str
     time: str
-    uigf_gacha_type: UIGFGachaType
 
 
-class UIGFInfo(BaseModel):
+class ZZZGFInfo(BaseModel):
     uid: str = "0"
     lang: str = "zh-cn"
+    region_time_zone: int = 8
     export_time: str = ""
     export_timestamp: int = 0
     export_app: str = ""
     export_app_version: str = ""
-    uigf_version: str = UIGF_VERSION
-    region_time_zone: int = 8
+    zzzgf_version: str = ZZZGF_VERSION
 
     def __init__(self, **data: Any):
-        data["region_time_zone"] = data.get("region_time_zone", UIGFInfo.get_region_time_zone(data.get("uid", "0")))
         super().__init__(**data)
         if not self.export_time:
             self.export_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.export_timestamp = int(datetime.datetime.now().timestamp())
 
-    @staticmethod
-    def get_region_time_zone(uid: str) -> int:
-        if uid.startswith("6"):
-            return -5
-        if uid.startswith("7"):
-            return 1
-        return 8
 
-
-class UIGFModel(BaseModel):
-    info: UIGFInfo
-    list: List[UIGFItem]
+class ZZZGFModel(BaseModel):
+    info: ZZZGFInfo
+    list: List[ZZZGFItem]

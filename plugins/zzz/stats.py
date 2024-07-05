@@ -10,6 +10,7 @@ from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from plugins.tools.genshin import GenshinHelper
+from utils.const import RESOURCE_DIR
 from utils.log import logger
 from utils.uid import mask_number
 
@@ -60,9 +61,6 @@ class PlayerStatsPlugins(Plugin):
         uid = client.player_id
         user_info = await client.get_zzz_user(uid)
 
-        # 因为需要替换线上图片地址为本地地址，先克隆数据，避免修改原数据
-        user_info = user_info.copy(deep=True)
-
         data = {
             "uid": mask_number(uid),
             "stats": user_info.stats,
@@ -74,11 +72,11 @@ class PlayerStatsPlugins(Plugin):
                 ("式舆防卫战防线", "cur_period_zone_layer_count"),
                 ("获得邦布数", "buddy_num"),
             ],
-            "style": random.choice(["mondstadt", "liyue"]),  # nosec
+            "style": "main",  # nosec
         }
-
+        await self.add_theme_data(data, uid)
         return await self.template_service.render(
-            "zzz/stats/stats.jinja2",
+            "zzz/stats/stats.html",
             data,
             {"width": 650, "height": 400},
             full_page=True,
@@ -112,6 +110,12 @@ class PlayerStatsPlugins(Plugin):
             await callback_query.answer(notice, show_alert=True)
             return
         await render_result.edit_inline_media(callback_query)
+
+    async def add_theme_data(self, data, player_id: int):
+        res = RESOURCE_DIR / "img"
+        data["avatar"] = (res / "avatar.png").as_uri()
+        data["background"] = (res / "home.png").as_uri()
+        return data
 
     async def get_inline_use_data(self) -> List[Optional[IInlineUseData]]:
         return [

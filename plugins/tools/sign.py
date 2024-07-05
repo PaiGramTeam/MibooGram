@@ -8,7 +8,6 @@ from typing import Optional, Tuple, List, TYPE_CHECKING
 from httpx import TimeoutException
 from simnet import Game
 from simnet.errors import BadRequest as SimnetBadRequest, AlreadyClaimed, InvalidCookies, TimedOut as SimnetTimedOut
-from simnet.utils.player import recognize_genshin_server
 from sqlalchemy.orm.exc import StaleDataError
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ParseMode
@@ -114,10 +113,7 @@ class SignSystem(Plugin):
         title: Optional[str] = "签到结果",
     ) -> str:
         if is_sleep:
-            if recognize_genshin_server(client.player_id) in ("cn_gf01", "cn_qd01"):
-                await asyncio.sleep(random.randint(10, 300))  # nosec
-            else:
-                await asyncio.sleep(random.randint(0, 3))  # nosec
+            await asyncio.sleep(random.randint(0, 3))  # nosec
         try:
             rewards = await client.get_monthly_rewards(game=Game.GENSHIN, lang="zh-cn")
         except SimnetBadRequest as error:
@@ -246,7 +242,7 @@ class SignSystem(Plugin):
                 logger.warning("UID[%s] 已经签到", client.player_id)
                 if is_raise:
                     raise error
-                result = "今天旅行者已经签到过了~"
+                result = "今天绳匠已经签到过了~"
             except SimnetBadRequest as error:
                 logger.warning("UID %s 签到失败，API返回信息为 %s", client.player_id, str(error))
                 if is_raise:
@@ -256,7 +252,7 @@ class SignSystem(Plugin):
                 result = "OK"
         else:
             logger.info("UID[%s] 已经签到", client.player_id)
-            result = "今天旅行者已经签到过了~"
+            result = "今天绳匠已经签到过了~"
         logger.info("UID[%s] 签到结果 %s", client.player_id, result)
         reward = rewards[daily_reward_info.claimed_rewards - (1 if daily_reward_info.signed_in else 0)]
         today = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
@@ -300,7 +296,7 @@ class SignSystem(Plugin):
                 text = "自动签到执行失败，Cookie无效"
                 sign_db.status = TaskStatusEnum.INVALID_COOKIES
             except AlreadyClaimed:
-                text = "今天旅行者已经签到过了~"
+                text = "今天绳匠已经签到过了~"
                 sign_db.status = TaskStatusEnum.ALREADY_CLAIMED
             except SimnetBadRequest as exc:
                 text = f"自动签到执行失败，API返回信息为 {str(exc)}"
