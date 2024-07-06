@@ -88,7 +88,7 @@ rich==13.7.1
 sentry-sdk==2.7.1
 setuptools==70.2.0
 shellingham==1.5.4
-simnet @ git+https://github.com/PaiGramTeam/SIMNet@9839a06bb87403443ac2cbea0ffde4156b05d902
+simnet @ git+https://github.com/PaiGramTeam/SIMNet@ed7c061d82af4fe8c5a07f0d10c568b5e467662b
 six==1.16.0
 smmap==5.0.1
 sniffio==1.3.1

@@ -26,6 +26,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("signal_log_import", "导入调频记录"),
             BotCommand("signal_log_export", "导出调频记录"),
             BotCommand("signal_log_delete", "删除调频记录"),
+            BotCommand("agent_detail", "角色详细信息"),
             # Cookie 查询类
             BotCommand("sign", "米游社绝区零每日签到"),
             BotCommand("dailynote_tasks", "自动便笺提醒"),
