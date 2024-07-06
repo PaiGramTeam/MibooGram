@@ -75,6 +75,26 @@
           >{{ current_train_score }}/{{ max_train_score }}</span>
         </div>
     </div>
+    <div class="item">
+        <div class="main">
+          <div class="bg"></div>
+          <img class="icon" src="./items/Resonium-Details.png" alt="" />
+          <div class="info">
+            <div class="name">每日刮刮卡</div>
+          </div>
+        </div>
+        <div class="right">
+          <span
+           class="{% if not card_sign_status %}red{% endif %}"
+          >
+          {% if card_sign_status %}
+          已完成
+          {% else %}
+          未完成
+          {% endif %}
+          </span>
+        </div>
+    </div>
 </div>
 </body>
 <script type="text/javascript"></script>

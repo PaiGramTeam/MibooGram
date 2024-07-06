@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Optional, TYPE_CHECKING, List
 
 from simnet.errors import DataNotPublic
+from simnet.models.zzz.chronicle.notes import ZZZNoteCardSignState
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.constants import ChatAction
 from telegram.ext import ConversationHandler, filters
@@ -53,11 +54,12 @@ class DailyNotePlugin(Plugin):
             "exp_status": daily_info.vhs_sale.sale_state.name,
             "current_train_score": daily_info.current_train_score,
             "max_train_score": daily_info.max_train_score,
+            "card_sign_status": daily_info.card_sign == ZZZNoteCardSignState.DONE,
         }
         render_result = await self.template_service.render(
             "zzz/daily_note/daily_note.jinja2",
             render_data,
-            {"width": 600, "height": 300},
+            {"width": 600, "height": 390},
             full_page=False,
             ttl=8 * 60,
         )

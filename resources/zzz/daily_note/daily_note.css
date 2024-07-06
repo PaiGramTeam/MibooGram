@@ -10,6 +10,7 @@
     padding: 0;
     box-sizing: border-box;
     user-select: none;
+    color: white;
 }
 
 body {
@@ -23,7 +24,8 @@ body {
 .container {
     width: 400px;
     height: 365px;
-    background: #f0eae3;
+    background: url("../../img/home.png");
+    background-size: 100% 100%;
     padding: 8px 16px;
 }
 
@@ -57,6 +59,7 @@ body {
 
 .item {
     border: 1px solid #dfd8d1;
+    border-radius: 15px 15px 15px 15px;
     display: flex;
     height: 49px;
     margin-top: 5px;
@@ -65,7 +68,7 @@ body {
 .item .main {
     display: flex;
     flex: 1;
-    background-color: #f5f1eb;
+    /*background-color: #f5f1eb;*/
     position: relative;
     /* font-weight: bold; */
 }
@@ -75,8 +78,8 @@ body {
     height: 100%;
     position: absolute;
     left: 0;
-    background-size: 100% auto;
-    background-image: url(./items/bg.png);
+    /*background-size: 100% auto;*/
+    /*background-image: url(./items/bg.png);*/
 }
 
 .item .main .icon {
@@ -99,7 +102,7 @@ body {
 .item .main .info .time {
     font-size: 12px;
     /* font-weight: 400; */
-    color: #5f5f5d;
+    color: sandybrown;
     line-height: 1;
 }
 
@@ -109,7 +112,7 @@ body {
     justify-content: center;
     width: 96px;
     height: 100%;
-    background-color: #ece3d8;
+    /*background-color: #ece3d8;*/
     font-size: 16px;
     color: #504c49;
     line-height: 55px;
@@ -118,4 +121,3 @@ body {
 .item .right .red {
     color: #f24e4c;
 }
-
