@@ -15,6 +15,7 @@ from core.services.cookies import CookiesService
 from core.services.template.models import FileType
 from core.services.template.services import TemplateService
 from core.services.wiki.services import WikiService
+from gram_core.config import config
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from gram_core.services.template.models import RenderGroupResult
 from plugins.tools.genshin import GenshinHelper, CharacterDetails
@@ -210,7 +211,7 @@ class AvatarListPlugin(Plugin):
         await message.reply_chat_action(ChatAction.TYPING)
 
         async with self.helper.genshin(user_id, player_id=uid, offset=offset) as client:
-            notice = await message.reply_text("彦卿需要收集整理数据，还请耐心等待哦~")
+            notice = await message.reply_text(f"{config.notice.bot_name}需要收集整理数据，还请耐心等待哦~")
             self.add_delete_message_job(notice, delay=60)
             images = await self.render(client, all_avatars)
 
