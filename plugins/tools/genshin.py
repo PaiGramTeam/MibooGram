@@ -8,8 +8,8 @@ from typing import TYPE_CHECKING, Union
 from pydantic import ValidationError
 from simnet import ZZZClient, Region
 from simnet.errors import BadRequest as SimnetBadRequest, InvalidCookies, NetworkError, CookieException, NeedChallenge
-from simnet.models.genshin.calculator import CalculatorCharacterDetails
-from simnet.models.genshin.chronicle.characters import Character
+from simnet.models.zzz.calculator import ZZZCalculatorCharacter
+from simnet.models.zzz.character import ZZZPartialCharacter
 from simnet.utils.player import recognize_game_biz
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm.exc import StaleDataError
@@ -87,13 +87,13 @@ class CharacterDetails(Plugin):
         self,
         uid: int,
         character_id: int,
-    ) -> Optional["CalculatorCharacterDetails"]:
+    ) -> Optional["ZZZCalculatorCharacter"]:
         name = self.get_qname(uid, character_id)
         data = await self.redis.get(name)
         if data is None:
             return None
         json_data = str(data, encoding="utf-8")
-        return CalculatorCharacterDetails.parse_raw(json_data)
+        return ZZZCalculatorCharacter.parse_raw(json_data)
 
     async def set_character_details(self, player_id: int, character_id: int, data: str):
         randint = random.randint(1, 30)  # nosec
@@ -135,7 +135,7 @@ class CharacterDetails(Plugin):
         self,
         uid: int,
         character_id: int,
-    ) -> Optional["CalculatorCharacterDetails"]:
+    ) -> Optional["ZZZCalculatorCharacter"]:
         async with AsyncSession(self.database.engine) as session:
             statement = (
                 select(CharacterDetailsSQLModel)
@@ -146,7 +146,7 @@ class CharacterDetails(Plugin):
             data = results.first()
             if data is not None:
                 try:
-                    return CalculatorCharacterDetails.parse_raw(data.data)
+                    return ZZZCalculatorCharacter.parse_raw(data.data)
                 except ValidationError as exc:
                     logger.error("解析数据出现异常 ValidationError", exc_info=exc)
                     await session.delete(data)
@@ -158,11 +158,11 @@ class CharacterDetails(Plugin):
         return None
 
     async def get_character_details(
-        self, client: "ZZZClient", character: "Union[int,Character]"
-    ) -> Optional["CalculatorCharacterDetails"]:
+        self, client: "ZZZClient", character: "Union[int,ZZZPartialCharacter]"
+    ) -> Optional["ZZZCalculatorCharacter"]:
         """缓存 character_details 并定时对其进行数据存储 当遇到 Too Many Requests 可以获取以前的数据"""
         uid = client.player_id
-        if isinstance(character, Character):
+        if isinstance(character, ZZZPartialCharacter):
             character_id = character.id
         else:
             character_id = character
@@ -171,7 +171,7 @@ class CharacterDetails(Plugin):
             if detail is not None:
                 return detail
             try:
-                detail = await client.get_character_details(character_id)
+                detail = (await client.get_zzz_character_info([character_id])).characters[0]
             except SimnetBadRequest as exc:
                 if "Too Many Requests" in exc.message:
                     return await self.get_character_details_for_mysql(uid, character_id)
@@ -179,7 +179,7 @@ class CharacterDetails(Plugin):
             asyncio.create_task(self.set_character_details(uid, character_id, detail.json(by_alias=True)))
             return detail
         try:
-            return await client.get_character_details(character_id)
+            return (await client.get_zzz_character_info([character_id])).characters[0]
         except SimnetBadRequest as exc:
             if "Too Many Requests" in exc.message:
                 logger.warning("Too Many Requests")

@@ -1,0 +1,167 @@
+:root {
+    --white: rgb(246 248 249);
+    --bg-color: rgb(233 229 220);
+    --h-color: rgb(203 189 162);
+    --red: rgb(255 86 33/ 80%);
+    --pink: rgb(215 57 203/80%);
+    --purple: rgb(159 68 211/80%);
+    --blue: rgb(98 168 233/ 80%);
+    --cyan: rgb(4 150 255/80%);
+    --green: rgb(67 185 124/ 80%);
+    --grey: rgb(189 191 190);
+}
+
+/* 上半 */
+.container {
+  width: 1000px !important;
+  max-width: 1000px !important;
+}
+
+.header {
+  /*background: #e0dad3 url(../gacha_log/img/) no-repeat right;*/
+  box-shadow: 0 0 8px #72a2ae79;
+    background-size: cover;
+    background-position: top;
+}
+
+.frame {
+  border-color: #cdbea8;
+  color: white;
+}
+
+.text-shadow {
+  text-shadow: 0 0.08em 0.1em #00000023;
+}
+
+/* 下半 */
+.content {
+  box-shadow: 0 0 8px #72a2ae79;
+  font-size: 21px;
+}
+
+.table thead {
+  background-color: #e0dad3;
+}
+.table tr {
+  border-color: #00000021;
+}
+.table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.role img {
+  transform: scale(1.05);
+}
+.weapon img {
+  transform: scale(1.1);
+}
+
+/* 计数+菱形图案 */
+.weapon img,
+.color {
+  position: relative;
+  z-index: 0;
+}
+.role.bg,
+.weapon.bg {
+  position: absolute;
+  z-index: -1;
+}
+.role.bg {
+  top: 5px;
+  left: 17px;
+  width: 22px;
+  height: 22px;
+  transform: rotateZ(45deg);
+}
+.weapon.bg {
+  top: 0;
+  left: -8px;
+  transform: skewX(-11deg);
+}
+.frame-border {
+  border-color: #f7e2ad2b;
+  width: 62px;
+  height: 27px;
+}
+
+.color .number {
+  color: white;
+}
+.green .bg {
+  background-color: #3c7d7f;
+}
+.cyan .bg {
+  background-color: #4898c7;
+}
+.blue .bg {
+  background-color: #4576b4;
+}
+.purple .bg {
+  background-color: #955ec9;
+}
+.pink .bg {
+  background-color: #c24e9a;
+}
+.red .bg {
+  background-color: #c24e4e;
+}
+
+/* 武器、角色背景 */
+.weapon-1-star {
+  background-color: #cfcfcf;
+}
+.weapon-2-star {
+  background-color: #c0edee;
+}
+.weapon-3-star {
+  background-color: #bedcff;
+}
+.weapon-4-star, .nongold {
+  background-color: #d3c8fa;
+}
+.weapon-5-star, .gold {
+  background-color: #f9e7bb;
+}
+
+.notice {
+  background-image: linear-gradient(135deg, #9452a5 10%, #fff5c3 100%);
+}
+
+.talent {
+    background-size: contain, 1.6em;
+    background-repeat: no-repeat;
+    background-position: center center;
+    text-shadow: 1px 1px 2px rgb(0 0 0 /20%);
+    z-index: -1 !important;
+    border-right-width: 0 !important;
+    border-left-width: 0 !important;
+}
+
+.talent-level-first {
+    background-color: rgb(189, 191, 190) !important;
+}
+
+.talent-level-1 {
+    background-color: rgb(189, 191, 190);
+}
+
+.talent-level-2 {
+    background-color: var(--green);
+}
+
+.talent-level-3 {
+    background-color: var(--blue);
+}
+
+.talent-level-4 {
+    background-color: rgb(190, 160, 250);
+}
+
+.talent-level-max {
+    background-image: linear-gradient(90deg, rgba(251, 129, 124, 0.8) 0%, rgba(255, 93, 85, 0.65) 50%, rgba(251, 129, 124, 0.8) 100%) !important;
+}
+
+.talent-level-max-img {
+    background-image: linear-gradient(90deg, rgba(251, 129, 124, 0.8) 0%, rgba(255, 93, 85, 0.65) 50%, rgba(251, 129, 124, 0.8) 100%) !important;
+}
