@@ -8,7 +8,7 @@ RUN echo "deb http://ftp.us.debian.org/debian bookworm main non-free" >> /etc/ap
     && apt update                                  \
     # clone
     && apt install git wget curl ffmpeg -y                \
-    && git clone -b main --recursive https://github.com/PaiGramTeam/PaiGram.git /app \
+    && git clone -b zzz --recursive https://github.com/PaiGramTeam/MibooGram.git /app \
     # install dependencies \
     && pip install virtualenv pdm  \
     && python3 -m virtualenv venv/                 \
