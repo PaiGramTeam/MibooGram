@@ -1,6 +1,6 @@
 from typing import List, Dict, Union
 
-from simnet.models.zzz.self_help import ZZZSelfHelpActionLog
+from simnet.models.zzz.self_help import ZZZSelfHelpActionLog, ZZZSelfHelpActionLogReason
 
 from modules.action_log.date import DateUtils
 from modules.action_log.models import ActionLogPair
@@ -32,14 +32,15 @@ class ActionLogAnalyse(DateUtils):
 
     @staticmethod
     def init_pair(data: List[ZZZSelfHelpActionLog]) -> List[ActionLogPair]:
-        # 确保第一个数据为登入，最后一条数据为登出
-        if data[0].status == 0:
-            data.pop(0)
-        if data[-1].status == 1:
-            data.pop(-1)
         pairs = []
-        for i in range(0, len(data), 2):
-            pairs.append(ActionLogPair(start=data[i], end=data[i + 1]))
+        start = None
+        for d in data:
+            if start:
+                if d.reason == ZZZSelfHelpActionLogReason.LOG_OUT:
+                    pairs.append(ActionLogPair(start=start, end=d))
+                    start = None
+            elif d.reason == ZZZSelfHelpActionLogReason.LOG_IN:
+                start = d
         return pairs
 
     def get_this_week_duration(self) -> int:
