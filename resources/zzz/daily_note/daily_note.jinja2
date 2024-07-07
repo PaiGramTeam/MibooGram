@@ -1,101 +1,63 @@
 <!DOCTYPE html>
 <html>
-<head>
-    <meta http-equiv="content-type" content="text/html;charset=utf-8"/>
-    <link rel="shortcut icon" href="#"/>
-    <link rel="stylesheet" type="text/css" href="./daily_note.css"/>
-</head>
-<body>
-<div class="container" id="container">
-    <div class="title">
+  <head>
+    <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+    <link rel="shortcut icon" href="#" />
+    <link rel="stylesheet" type="text/css" href="./daily_note.css" />
+  </head>
+  <body>
+    <div class="container" id="container">
+      <div class="title">
         <div class="id">
-            <span>ID：{{ uid }}</span>
+          <span class="id-head">ID</span>
+          <span>{{ uid }}</span>
         </div>
-        <div class="day">
-            <span>{{ day }}</span>
-        </div>
-    </div>
-    <div class="item">
+        <div class="day">{{ day }}</div>
+      </div>
+      <div class="stamina">
         <div class="main">
-            <div class="bg"></div>
-            <img class="icon" src="items/电量.png" alt=""/>
-            <div class="info">
-                <div class="name">电量</div>
-                <div class="time">
-                    {% if resin_recovery_time %}
-                        将于{{ resin_recovery_time }} 全部恢复
-                    {% else %}
-                        电量已完全恢复
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        <div class="right">
-          <span class="{% if current_resin/(max_resin or 1) > 0.9 %}red{% endif %}">
-            {{ current_resin }}/{{ max_resin }}
-          </span>
-        </div>
-    </div>
-    <div class="item">
-        <div class="main">
-            <div class="bg"></div>
-            <img class="icon" src="items/Investigation-Point.png" alt=""/>
-            <div class="info">
-                <div class="name">录像店经营</div>
-            </div>
-        </div>
-        <div class="right">
-            <span class="{% if exp_status == 'DONE' %}red{% endif %}">
-                {% if exp_status == 'DONE' %}
-                已完成
-                {% else %}
-                正在营业
-                {% endif %}
-            </span>
-        </div>
-    </div>
-    <div class="item">
-        <div class="main">
-          <div class="bg"></div>
-          <img class="icon" src="./items/Inter-Knot-Credit.png" alt="" />
+          <img class="icon" src="items/电量.png" alt="" />
           <div class="info">
-            <div class="name">每日活跃</div>
-            <div class="time">
-            {% if current_train_score == max_train_score %}
-            每日活跃已完成
-            {% else %}
-            每日活跃未完成
-            {% endif %}
-            </div>
+            <div class="name">电量</div>
           </div>
         </div>
-        <div class="right">
+        <div class="count">
           <span
-           class="{% if current_train_score != max_train_score %}red{% endif %}"
-          >{{ current_train_score }}/{{ max_train_score }}</span>
-        </div>
-    </div>
-    <div class="item">
-        <div class="main">
-          <div class="bg"></div>
-          <img class="icon" src="./items/Resonium-Details.png" alt="" />
-          <div class="info">
-            <div class="name">每日刮刮卡</div>
-          </div>
-        </div>
-        <div class="right">
-          <span
-           class="{% if not card_sign_status %}red{% endif %}"
+            class="count-cur {% if current_resin/(max_resin or 1) > 0.9 %}red{% endif %}"
           >
-          {% if card_sign_status %}
-          已完成
-          {% else %}
-          未完成
-          {% endif %}
+            {{ current_resin }}
+          </span>
+          <span>/ {{ max_resin }}</span>
+        </div>
+        <div class="datail">
+          {% if resin_recovery_time %} 将于{{ resin_recovery_time }}
+          全部恢复 {% else %} 电量已完全恢复 {% endif %}
+        </div>
+      </div>
+      <div class="list">
+        <div class="item">
+          <img class="icon" src="items/Investigation-Point.png" alt="" />
+          <div class="name">录像店经营</div>
+          <div class="detail {% if exp_status == 'DONE' %}red{% endif %}">
+            {% if exp_status == 'DONE' %} 已完成 {% else %} 正在营业 {% endif %}
+          </div>
+        </div>
+        <div class="item">
+          <img class="icon" src="./items/Inter-Knot-Credit.png" alt="" />
+          <div class="name">每日活跃</div>
+          <span
+            class="detail {% if current_train_score != max_train_score %}red{% endif %}"
+            >{{ current_train_score }}/{{ max_train_score }}</span
+          >
+        </div>
+        <div class="item">
+          <img class="icon" src="./items/Resonium-Details.png" alt="" />
+          <div class="name">每日刮刮卡</div>
+          <span class="detail {% if not card_sign_status %}red{% endif %}">
+            {% if card_sign_status %} 已完成 {% else %} 未完成 {% endif %}
           </span>
         </div>
+      </div>
     </div>
-</div>
-</body>
-<script type="text/javascript"></script>
+  </body>
 </html>
