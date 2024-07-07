@@ -36,9 +36,8 @@ For contributors using WSL2 on Ubuntu 22.04, follow the [detailed guide here](/d
 #### 1. Clone PaiGram from Git
 
 ```bash
-git clone git@github.com:PaiGramTeam/PaiGram.git
+git clone git@github.com:PaiGramTeam/PaiGram.git --recurse-submodules
 cd PaiGram/
-git submodule update --init --recursive
 ```
 
 #### 2. Project Setup
