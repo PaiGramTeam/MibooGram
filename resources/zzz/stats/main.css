@@ -1,56 +1,46 @@
 body {
-  background-color: #f5f6fb;
+  background: linear-gradient(#febb2e 20%, #010101 40%);
+  background-color: #010101;
 }
 
-.header {
-  /*background-image: url(../../bot/help/background/header.png);*/
-  box-shadow: 0 0 8px #72a2ae79;
+.in-shadow {
+  box-shadow: inset 1px 1px 1px #1e1f20b4, inset -1px -1px 1px #dfd8d171;
 }
 
-.box {
-  background-color: #f4f2e4;
-  box-shadow: 0 0 8px #72a2ae79;
+.out-shadow {
+  box-shadow: inset -1px -1px 1px #1e1f208e, inset 1px 1px 1px #dfd8d138;
 }
 
-.pointer-bar {
-  width: 95%;
-  height: 8px;
-  display: inline-block;
-  background-color: rgb(0, 0, 0, 0.2);
-  border-radius: 0.25rem;
+.capsule {
+  background-color: #080808;
+  outline: 2px solid #000000;
+  border: 3.5px solid #424242;
+  border-radius: 100px;
 }
 
-.pointer-progress-bar {
-  border-radius: 0.25rem;
-  height: 100%;
-  background: #fff6e2;
+.box .capsule.item {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  height: 2.6em;
+  padding: 0;
 }
 
-.name {
-  color: #ffffee;
-  text-shadow: 0 0.08em 0.1em #00000093, 0 0.1em 0.3em rgba(0, 0, 0, 0.4);
+.box .capsule.item > *:nth-last-child(1) {
+  padding-right: 1em;
+  background-image: linear-gradient(#ffdc00, #ce7016);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  transform: scale(2.7);
+  transform-origin: center 19px;
 }
 
-.uid {
-  color: #fff;
-  background: linear-gradient(
-    to right,
-    rgb(0, 0, 0, 0),
-    #3f7587 25%,
-    #3f7587 75%,
-    rgb(0, 0, 0, 0)
-  );
-}
-
-.about {
-  background-color: #e0dad3;
-  color: #8a4d30;
-}
-
-.frame-pic {
-  border-color: #fdfdf356;
-}
-
-.frame {
-  border-color: #cdbea8;
+.box .capsule.item > *:nth-child(1) {
+  line-height: 2.6em;
+  border-radius: 100px;
+  padding: 0 1.5em;
+  outline: 3.5px solid #424242;
+  color: #ffffff;
 }
