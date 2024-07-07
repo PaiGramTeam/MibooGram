@@ -1,131 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Avatar List</title>
-  <link type="text/css" href="./style.css" rel="stylesheet"/>
-  <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
-  <script src="../../js/tailwindcss-3.1.8.js"></script>
-</head>
-<body>
-<div class="container flex flex-col justify-center p-6">
-  <div class="header rounded-xl p-2 mb-6" style='background-image: url("{{ background }}") '>
-    <div class="frame rounded-lg border-solid border-2 bg-contain p-4 flex items-center">
-      <img class="w-28 h-28 rounded-full mr-4" src="{{ avatar }}" alt="Avatar">
-      <div>
-        <div class="uid text-xl italic px-2">UID: {{ uid }}</div>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Avatar List</title>
+    <link type="text/css" href="./style.css" rel="stylesheet" />
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet" />
+    <script src="../../js/tailwindcss-3.4.4.js"></script>
+  </head>
+  <body>
+    <div class="container flex flex-col justify-center p-6">
+      <div
+        class="header rounded-xl p-2 mb-6"
+        style='background-image: url("{{ background }}") '
+      >
+        <div
+          class="frame rounded-lg border-solid border-2 bg-contain p-4 flex items-center"
+        >
+          <img
+            class="w-28 h-28 rounded-full mr-4"
+            src="{{ avatar }}"
+            alt="Avatar"
+          />
+          <div>
+            <div class="uid text-xl italic px-2">UID: {{ uid }}</div>
+          </div>
+        </div>
       </div>
-    </div>
-  </div>
-  <div class="content rounded-xl overflow-hidden flex flex-col justify-center">
-    <table class="table text-center border-collapse">
-      <thead>
-        <tr>
-          <th class="text-right">#</th>
-          <th colspan="2">角色</th>
-          <th>等级</th>
-          <th>意象</th>
-          <th>普攻</th>
-          <th>特殊</th>
-          <th>闪避</th>
-          <th>连携</th>
-          <th>核心</th>
-          <th>支援</th>
-          <th colspan="4">音擎</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for avatar_data in avatar_datas %}
-          {% set equipment = avatar_data.equipment %}
-          {% if avatar_data.rarity == 5 %}
-            {% set row_bg = 'gold' %}
-          {% else %}
-            {% set row_bg = 'nongold' %}
-          {% endif %}
-          {% if equipment != none %}
-            {% set equip_star = equipment.rarity %}
-          {% else %}
-            {% set equip_star = '' %}
-          {% endif %}
-          <tr class="h-8 border border-b">
-            <td class="text-right {{row_bg}}">{{ start_id + loop.index }}</td>
-            <td class="role {{row_bg}}">
-              <img class="h-8 pl-2 img-drop-shadow" src="{{ avatar_data.icon }}"/>
-            </td>
-            <td class="role text-left {{row_bg}}">{{ avatar_data.name }}</td>
-            <td>{{ avatar_data.level }}</td>
-            <td
-                {% set constellation = avatar_data.eidolon %}
-                {% if constellation != 0 %}
-                  class="color {{ ['green', 'cyan', 'blue', 'purple', 'pink', 'red'][constellation - 1] }}"
-                {% endif %}
-            >
-              <span class="number role inline-block">{{ constellation }}</span>
-              <div class="role bg"></div>
-            </td>
-            {% for skill in avatar_data.skills %}
-              {% set talent_style = 'talent' %}
-              {% set skill_level = skill.level %}
-
-              {% if skill_level < 4 %}
-                {% set talent_style = talent_style + ' talent-level-first' %}
-              {% endif %}
-
-              {% if skill.max_level == skill.level %}
-                {% if loop.index == 1 %}
-                {% set talent_max_style = " talent-level-max" %}
-                {% else %}
-                {% set talent_max_style = " talent-level-max-img" %}
-                {% endif %}
-                {% set talent_style = talent_style + talent_max_style %}
-              {% endif %}
-
-              {% if skill.max_level != skill.level %}
-                {% if skill_level < 4 %}
-              {% set talent_style = talent_style + ' talent-level-1' %}
-                {% elif skill_level < 6 %}
-                  {% set talent_style = talent_style + ' talent-level-2' %}
-                {% elif skill_level < 9 %}
-                  {% set talent_style = talent_style + ' talent-level-3' %}
-                {% else %}
-                  {% set talent_style = talent_style + ' talent-level-4' %}
-                {% endif %}
-              {% endif %}
-              <td class="{{ talent_style }}">{{ skill.level }}</td>
-            {% endfor %}
-            {% if equipment != none %}
-              <td class="weapon-{{ equip_star }}-star text-left pl-3">
-                {% if equipment.level < 10 %}
-                  Lv.{{ equipment.level }}
-                {% else %}
-                  Lv.{{ equipment.level }}
-                {% endif %}
+      <div
+        class="content rounded-xl overflow-hidden flex flex-col justify-center"
+      >
+        <table class="table text-center border-collapse">
+          <thead>
+            <tr>
+              <th class="text-right">#</th>
+              <th colspan="2">角色</th>
+              <th>等级</th>
+              <th>意象</th>
+              <th>普攻</th>
+              <th>特殊</th>
+              <th>闪避</th>
+              <th>连携</th>
+              <th>核心</th>
+              <th>支援</th>
+              <th colspan="4">音擎</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for avatar_data in avatar_datas %} {% set equipment =
+            avatar_data.equipment %} {% if avatar_data.rarity == 5 %} {% set
+            row_bg = 'gold' %} {% else %} {% set row_bg = 'nongold' %} {% endif
+            %} {% if equipment != none %} {% set equip_star = equipment.rarity
+            %} {% else %} {% set equip_star = '' %} {% endif %}
+            <tr class="h-8 border border-b">
+              <td class="text-right {{row_bg}}">{{ start_id + loop.index }}</td>
+              <td class="role {{row_bg}}">
+                <img
+                  class="h-8 pl-2 img-drop-shadow"
+                  src="{{ avatar_data.icon }}"
+                />
               </td>
-              <td class="weapon-{{ equip_star }}-star color border-none {{ ['green', 'cyan', 'blue', 'purple', 'red'][equipment.eidolon - 1] }}">
+              <td class="role text-left {{row_bg}}">{{ avatar_data.name }}</td>
+              <td>{{ avatar_data.level }}</td>
+              <td
+                {%
+                set
+                constellation="avatar_data.eidolon"
+                %}
+                {%
+                if
+                constellation
+                !="0"
+                %}
+                class="color {{ ['green', 'cyan', 'blue', 'purple', 'pink', 'red'][constellation - 1] }}"
+                {%
+                endif
+                %}
+              >
+                <span class="number role inline-block"
+                  >{{ constellation }}</span
+                >
+                <div class="role bg"></div>
+              </td>
+              {% for skill in avatar_data.skills %} {% set talent_style =
+              'talent' %} {% set skill_level = skill.level %} {% if skill_level
+              < 4 %} {% set talent_style = talent_style + ' talent-level-first'
+              %} {% endif %} {% if skill.max_level == skill.level %} {% if
+              loop.index == 1 %} {% set talent_max_style = " talent-level-max"
+              %} {% else %} {% set talent_max_style = " talent-level-max-img" %}
+              {% endif %} {% set talent_style = talent_style + talent_max_style
+              %} {% endif %} {% if skill.max_level != skill.level %} {% if
+              skill_level < 4 %} {% set talent_style = talent_style + '
+              talent-level-1' %} {% elif skill_level < 6 %} {% set talent_style
+              = talent_style + ' talent-level-2' %} {% elif skill_level < 9 %}
+              {% set talent_style = talent_style + ' talent-level-3' %} {% else
+              %} {% set talent_style = talent_style + ' talent-level-4' %} {%
+              endif %} {% endif %}
+              <td class="{{ talent_style }}">{{ skill.level }}</td>
+              {% endfor %} {% if equipment != none %}
+              <td class="weapon-{{ equip_star }}-star text-left pl-3">
+                {% if equipment.level < 10 %} Lv.{{ equipment.level }} {% else
+                %} Lv.{{ equipment.level }} {% endif %}
+              </td>
+              <td
+                class="weapon-{{ equip_star }}-star color border-none {{ ['green', 'cyan', 'blue', 'purple', 'red'][equipment.eidolon - 1] }}"
+              >
                 <span class="weapon number">{{ equipment.eidolon }}</span>
                 <div class="weapon bg p-1">
                   <div class="frame-border border-solid border"></div>
                 </div>
               </td>
               <td class="weapon weapon-{{ equip_star }}-star">
-                <img class="h-8 pl-1" src="{{ equipment.icon }}" alt="weapon">
+                <img class="h-8 pl-1" src="{{ equipment.icon }}" alt="weapon" />
               </td>
-              <td class="weapon-{{ equip_star }}-star text-left">{{ equipment.name }}</td>
-            {% else %}
+              <td class="weapon-{{ equip_star }}-star text-left">
+                {{ equipment.name }}
+              </td>
+              {% else %}
               <td colspan="4"></td>
-            {% endif %}
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    <div class="notice">
-      {% if has_more %}
-        <div>
-          *想查看完整数据请在指令中加上<code>all</code>或者<code>全部</code>: <code>/avatars all</code>、<code>全部练度统计</code>
+              {% endif %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <div class="notice">
+          {% if has_more %}
+          <div>
+            *想查看完整数据请在指令中加上<code>all</code>或者<code>全部</code>:
+            <code>/avatars all</code>、<code>全部练度统计</code>
+          </div>
+          {% endif %}
         </div>
-      {% endif %}
+      </div>
     </div>
-  </div>
-</div>
-</body>
+  </body>
 </html>

@@ -1,73 +1,104 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-    <meta charset="UTF-8"/>
+  <head>
+    <meta charset="UTF-8" />
     <title>Title</title>
     <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     />
-    <link href="./{{style}}.css" rel="stylesheet"/>
-    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
-    <script src="../../js/tailwindcss-3.1.8.js"></script>
-</head>
-<body class="text-neutral-600">
-<div class="mx-auto max-w-[600px] py-8">
-    <div class="header p-2 rounded-xl bg-cover mb-6" style='background-image: url("{{ background }}")'>
+    <link href="./{{style}}.css" rel="stylesheet" />
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet" />
+    <script src="../../js/tailwindcss-3.4.4.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#febb2e",
+              card: "#252525",
+              dark: "#121212",
+              light: "#ffffff",
+              muted: "#858585",
+            },
+          },
+        },
+      };
+    </script>
+  </head>
+  <body>
+    <div class="mx-auto max-w-[640px] py-4">
+      <div
+        class="header out-shadow border-4 border-black p-2 rounded-2xl bg-card mb-3"
+      >
         <div
-                class="frame-pic p-4 flex items-center rounded-lg border-solid border-2"
+          class="head-container relative overflow-hidden bg-[#febb2e] px-8 py-3 flex items-center rounded-lg"
         >
-            <img class="w-16 h-16 rounded-full mr-4" src="{{ avatar }}" alt="Avatar">
-            <div class="flex flex-col items-center justify-center">
-                <h1 class="name text-4xl italic mb-2 px-2 text-shadow">
-                    {{ nickname }}
-                </h1>
-                <h1 class="italic uid px-10">UID - {{ uid }}</h1>
-            </div>
+          <span
+            class="font-black z-0 text-[#bd910c66] uppercase absolute text-7xl"
+            >Zenless Zone Zero</span
+          >
+          <img
+            class="border-4 border-black z-10 size-20 rounded-full mr-4"
+            src="{{ avatar }}"
+            alt="Avatar"
+          />
+          <div class="z-10 flex flex-col justify-center gap-y-2 text-dark">
+            <h1 class="font-bold bg-background text-4xl">{{ nickname }}</h1>
+            <h1 class="text-lg font-bold">UID: {{ uid }}</h1>
+          </div>
         </div>
-    </div>
-    <div class="box p-2 rounded-xl overflow-hidden">
-        <div class="frame rounded-lg border-solid border-2">
-            <h2
-                    class="title font-semibold pt-4 text-center text-xl text-neutral-700 p-1"
-            >
-                <img src="./items/star.png" class="inline-block w-4"/>
-                数据总览
-            </h2>
-            <div class="p-6 grid grid-cols-4 gap-4 text-center">
-                {% for label, key in stats_labels %}
-                <div class="">
-                    {% set value = stats[key] %}
-                    {% if value == "" %}
-                    {% set value = "-" %}
-                    {% endif %}
-                    <div class="text-xl box-stats">{{ value }}</div>
-                    <div class="text-neutral-400 box-stats-label">{{ label }}</div>
-                </div>
-                {% endfor %}
-                {% if rogue %}
-                {% for label, key in rogue_labels %}
-                <div class="">
-                    <div class="text-xl box-stats">{{ rogue[key] }}</div>
-                    <div class="text-neutral-400 box-stats-label">{{ label }}</div>
-                </div>
-                {% endfor %}
-                {% endif %}
-                {% if ledger %}
-                {% for label, key in ledger_labels %}
-                <div class="">
-                    <div class="text-xl box-stats">{{ ledger[key] }}</div>
-                    <div class="text-neutral-400 box-stats-label">{{ label }}</div>
-                </div>
-                {% endfor %}
-                {% endif %}
-            </div>
+      </div>
+      <div
+        class="box out-shadow border-4 border-black py-8 px-6 rounded-2xl bg-card flex flex-col gap-y-4"
+      >
+        <div
+          class="title inline-block w-auto mr-auto border-primary border-[4px] rounded-full"
+        >
+          <h2 class="flex items-center gap-x-4 capsule pl-5 text-xl text-light">
+            数据总览
+            <img
+              class="box-content size-6 px-4 py-1 rounded-full bg-[#121212]"
+              style="outline: 3.5px solid #424242"
+              src="./items/arrows.png"
+              alt="arrows"
+            />
+          </h2>
+        </div>
+        <div class="grid grid-cols-2 gap-x-6 gap-y-3 text-center">
+          <!-- stats -->
+          {% for label, key in stats_labels %} {% set value = stats[key] if
+          stats[key] != "" else "-" %} {% set tag = "capsule" if label ==
+          "活跃天数" or label == "获取角色数" %}
+          <div
+            class="{{ tag }} item flex font-bold justify-between px-5 items-center py-1 bg-dark rounded-full in-shadow"
+          >
+            <div class="text-muted">{{ label }}</div>
+            <div class="text-light">{{ value }}</div>
+          </div>
+          {% endfor %}
 
-            <div class="about text-center leading-8 text-xs opacity-50">
-                所有数据会有一小时延迟 以游戏内为准 此处仅供参考
-            </div>
+          <!-- rogue -->
+          {% if rogue %} {% for label, key in rogue_labels %}
+          <div class="">
+            <div class="text-xl box-stats">{{ rogue[key] }}</div>
+            <div class="text-neutral-400 box-stats-label">{{ label }}</div>
+          </div>
+          {% endfor %} {% endif %}
+
+          <!-- ledger -->
+          {% if ledger %} {% for label, key in ledger_labels %}
+          <div class="">
+            <div class="text-xl box-stats">{{ ledger[key] }}</div>
+            <div class="text-neutral-400 box-stats-label">{{ label }}</div>
+          </div>
+          {% endfor %} {% endif %}
         </div>
+
+        <div class="about text-center text-xs text-muted">
+          所有数据会有一小时延迟 以游戏内为准 此处仅供参考
+        </div>
+      </div>
     </div>
-</div>
-</body>
+  </body>
 </html>

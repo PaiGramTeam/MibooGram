@@ -34,9 +34,8 @@
 #### 1. 从 Git 克隆 PaiGram
 
 ```bash
-git clone git@github.com:PaiGramTeam/PaiGram.git
+git clone git@github.com:PaiGramTeam/PaiGram.git --recurse-submodules
 cd PaiGram/
-git submodule update --init --recursive
 ```
 
 #### 2. 项目设置
