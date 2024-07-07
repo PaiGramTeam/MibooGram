@@ -46,11 +46,18 @@
             </tr>
           </thead>
           <tbody>
-            {% for avatar_data in avatar_datas %} {% set equipment =
-            avatar_data.equipment %} {% if avatar_data.rarity == 5 %} {% set
-            row_bg = 'gold' %} {% else %} {% set row_bg = 'nongold' %} {% endif
-            %} {% if equipment != none %} {% set equip_star = equipment.rarity
-            %} {% else %} {% set equip_star = '' %} {% endif %}
+            {% for avatar_data in avatar_datas %}
+            {% set equipment = avatar_data.equipment %}
+            {% if avatar_data.rarity == 5 %}
+            {% set row_bg = 'gold' %}
+            {% else %}
+            {% set row_bg = 'nongold' %}
+            {% endif %}
+            {% if equipment != none %}
+            {% set equip_star = equipment.rarity %}
+            {% else %}
+            {% set equip_star = '' %}
+            {% endif %}
             <tr class="h-8 border border-b">
               <td class="text-right {{row_bg}}">{{ start_id + loop.index }}</td>
               <td class="role {{row_bg}}">
@@ -61,21 +68,13 @@
               </td>
               <td class="role text-left {{row_bg}}">{{ avatar_data.name }}</td>
               <td>{{ avatar_data.level }}</td>
-              <td
-                {%
-                set
-                constellation="avatar_data.eidolon"
-                %}
-                {%
-                if
-                constellation
-                !="0"
-                %}
-                class="color {{ ['green', 'cyan', 'blue', 'purple', 'pink', 'red'][constellation - 1] }}"
-                {%
-                endif
-                %}
-              >
+              {% set constellation = avatar_data.eidolon %}
+              {% set class_str = "" %}
+              {% if constellation != 0 %}
+              {% set color = ['green', 'cyan', 'blue', 'purple', 'pink', 'red'][constellation - 1] %}
+              {% set class_str = "color " + color %}
+              {% endif %}
+              <td class="{{ class_str }}">
                 <span class="number role inline-block"
                   >{{ constellation }}</span
                 >
