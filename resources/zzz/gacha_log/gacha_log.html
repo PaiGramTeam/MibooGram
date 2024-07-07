@@ -5,22 +5,31 @@
     <link rel="stylesheet" type="text/css" href="gacha_log.css" />
     <link type="text/css" href="../../styles/public.css" rel="stylesheet" />
     <link rel="preload" href="./img/starrail.png" as="image" />
-    <script src="../../js/tailwindcss-3.1.8.js"></script>
+    <script src="../../js/tailwindcss-3.4.4.js"></script>
     <title>Title</title>
   </head>
   <body id="container" class="body_box">
     <div class="container">
       <div class="info_box">
-        <div class="header p-2 rounded-xl mb-6" style='background-image: url("{{ background }}")'>
-          <div class="frame p-4 rounded-lg border-solid border-2 flex items-center">
-            <img class="w-16 h-16 rounded-full mr-4" src="{{ avatar }}" alt="Avatar">
+        <div
+          class="header p-2 rounded-xl mb-6"
+          style='background-image: url("{{ background }}")'
+        >
+          <div
+            class="frame p-4 rounded-lg border-solid border-2 flex items-center"
+          >
+            <img
+              class="w-16 h-16 rounded-full mr-4"
+              src="{{ avatar }}"
+              alt="Avatar"
+            />
             <div>
               <h2 class="font-bold italic">ID: {{ uid }}</h2>
               <h2 class="italic">
                 {{ allNum }}抽
-              <span class="label text-neutral-600 label_{{type}}"
-                >{{ typeName }}</span
-              >
+                <span class="label text-neutral-600 label_{{type}}"
+                  >{{ typeName }}</span
+                >
               </h2>
             </div>
           </div>
