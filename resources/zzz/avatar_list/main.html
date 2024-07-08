@@ -27,7 +27,11 @@
       class="header out-shadow rounded-2xl px-6 py-4 flex items-center gap-x-4 border-[6px] border-card"
       style='background-image: url("{{ background }}") '
     >
-      <img class="size-20 rounded-full mr-4" src="{{ avatar }}" alt="Avatar" />
+      <img
+        class="size-20 rounded-full mr-4 border-4 border-black"
+        src="{{ avatar }}"
+        alt="Avatar"
+      />
       <div class="flex-1">
         <div class="uid text-light text-2xl">UID: {{ uid }}</div>
       </div>
@@ -130,7 +134,7 @@
         <!-- equipment -->
         {% set equipment = avatar_data.equipment %}
         <div
-          class="equipment in-shadow bg-black rounded-xl p-2 gap-y-2 text-muted flex flex-col h-full items-end justify-center min-w-[7.4rem]"
+          class="equipment in-shadow bg-black rounded-xl p-2 gap-y-2 text-muted flex flex-col h-full items-end justify-center min-w-[7.4rem] relative overflow-hidden"
         >
           {% if equipment %} {% set equip_star = equipment.rarity %}
           <div
@@ -156,7 +160,9 @@
           </div>
           <p class="text-light">{{ equipment.name }}</p>
           {% else %}
-          <div class="w-full justify-center">
+          <div
+            class="absolute top-0 start-0 h-full w-full justify-center bg-dark flex items-center"
+          >
             <img
               class="size-16 mx-auto"
               src="../agent_detail/images/equip-disable-bg.png"
