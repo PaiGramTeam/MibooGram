@@ -6,130 +6,203 @@
     <link type="text/css" href="./style.css" rel="stylesheet" />
     <link type="text/css" href="../../styles/public.css" rel="stylesheet" />
     <script src="../../js/tailwindcss-3.4.4.js"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              primary: "#febb2e",
+              dark: "#1a1c1b",
+              card: "#252525",
+              light: "#ffffff",
+              muted: "#858585",
+            },
+          },
+        },
+      };
+    </script>
   </head>
-  <body>
-    <div class="container flex flex-col justify-center p-6">
-      <div
-        class="header rounded-xl p-2 mb-6"
-        style='background-image: url("{{ background }}") '
-      >
+  <body class="bg-black flex flex-col justify-center p-4 gap-y-4">
+    <div
+      class="header out-shadow rounded-2xl px-6 py-4 flex items-center gap-x-4 border-[6px] border-card"
+      style='background-image: url("{{ background }}") '
+    >
+      <img class="size-20 rounded-full mr-4" src="{{ avatar }}" alt="Avatar" />
+      <div class="flex-1">
+        <div class="uid text-light text-2xl">UID: {{ uid }}</div>
+      </div>
+      <div class="z-10">
+        <img class="size-16" src="../../img/logo.png" alt="logo" />
+      </div>
+    </div>
+
+    <div class="content grid grid-cols-2 gap-4 rounded-xl">
+      {% for avatar_data in avatar_datas %}
+      <div class="flex out-shadow bg-card p-3 rounded-2xl items-center gap-x-3">
+        <!-- <td class="text-right {{ row_bg }}">
+                {{ start_id + loop.index }}
+              </td> -->
+        <!-- role -->
         <div
-          class="frame rounded-lg border-solid border-2 bg-contain p-4 flex items-center"
+          class="role relative overflow-hidden p-1 border-4 border-black rounded-xl bg-black {% if avatar_data.rarity == 5 %}gold{% endif %}"
         >
+          <div
+            class="rank-container absolute top-0 left-0 z-10 p-1 bg-black text-light rounded-br-lg"
+          >
+            {% set rarity = 'S' if avatar_data.rarity == 5 else 'A' %}
+            <img class="size-4" src="../../img/rarity/{{ rarity }}.png" />
+            <!-- <span class="rank font-bold">
+                  {% if avatar_data.rarity == 5 %}S{% else %}A{% endif %}
+                </span> -->
+          </div>
           <img
-            class="w-28 h-28 rounded-full mr-4"
-            src="{{ avatar }}"
-            alt="Avatar"
+            class="size-[4.7rem] bg-card rounded"
+            src="{{ avatar_data.icon }}"
           />
-          <div>
-            <div class="uid text-xl italic px-2">UID: {{ uid }}</div>
+        </div>
+
+        <!-- info -->
+        <div
+          class="info in-shadow flex-1 relative flex flex-row justify-between bg-black text-muted px-3 py-3 rounded-xl gap-x-3"
+        >
+          <div class="basic flex flex-col items-start gap-y-2 min-w-[3.7rem]">
+            <span class="name text-xl text-light">{{ avatar_data.name }}</span>
+
+            <div>
+              <small
+                class="level text-light font-sans font-bold bg-[#686868] px-2 py-1 rounded"
+                >Lv.{{ avatar_data.level }}</small
+              >
+              <!-- constellation -->
+              {% set constellation = avatar_data.eidolon %} {% set class_str =
+              '' %} {% if constellation != 0 %} {% set color = ['green', 'cyan',
+              'blue', 'purple', 'pink', 'red'][constellation - 1] %} {% set
+              class_str = "color " ~ color %} {% endif %}
+              <span class="number {{ class_str }} mx-1"
+                >{{ constellation }}</span
+              >
+            </div>
+          </div>
+          <div class="divider w-2">
+            <div
+              class="absolute top-0 h-full w-2 bg-card -skew-x-12"
+              style="
+                box-shadow: inset -1px 0 1px #1e1f208e,
+                  inset 1px 0 1px #dfd8d138;
+              "
+            ></div>
+          </div>
+          <!-- skills -->
+          <!-- {% for skill in avatar_data.skills %} <div>{{ skill.level }}</div> {% endfor %} -->
+          {% set skills = avatar_data.skills %}
+          <div class="skills flex flex-col gap-y-2">
+            <ul class="ml-3">
+              <li>
+                <img src="../agent_detail/images/skill-icon-0.0d9692b6.png" />
+                <span>{{ skills[0].level }}</span>
+              </li>
+              <li>
+                <img src="../agent_detail/images/skill-icon-2.d863591b.png" />
+                <span>{{ skills[2].level }}</span>
+              </li>
+              <li>
+                <img src="../agent_detail/images/skill-icon-6.3fc55b66.png" />
+                <span>{{ skills[5].level }}</span>
+              </li>
+            </ul>
+            <ul>
+              <li>
+                <img src="../agent_detail/images/skill-icon-1.e2f84ffb.png" />
+                <span>{{ skills[1].level }}</span>
+              </li>
+              <li>
+                <img src="../agent_detail/images/skill-icon-3.afdb8abe.png" />
+                <span>{{ skills[3].level }}</span>
+              </li>
+              <li>
+                <img src="../agent_detail/images/skill-icon-5.3d486da1.png" />
+                <span>{{ skills[4].level }}</span>
+              </li>
+            </ul>
           </div>
         </div>
-      </div>
-      <div
-        class="content rounded-xl overflow-hidden flex flex-col justify-center"
-      >
-        <table class="table text-center border-collapse">
-          <thead>
-            <tr>
-              <th class="text-right">#</th>
-              <th colspan="2">角色</th>
-              <th>等级</th>
-              <th>意象</th>
-              <th>普攻</th>
-              <th>特殊</th>
-              <th>闪避</th>
-              <th>连携</th>
-              <th>核心</th>
-              <th>支援</th>
-              <th colspan="4">音擎</th>
-            </tr>
-          </thead>
-          <tbody>
-            {% for avatar_data in avatar_datas %}
-            {% set equipment = avatar_data.equipment %}
-            {% if avatar_data.rarity == 5 %}
-            {% set row_bg = 'gold' %}
-            {% else %}
-            {% set row_bg = 'nongold' %}
-            {% endif %}
-            {% if equipment != none %}
-            {% set equip_star = equipment.rarity %}
-            {% else %}
-            {% set equip_star = '' %}
-            {% endif %}
-            <tr class="h-8 border border-b">
-              <td class="text-right {{row_bg}}">{{ start_id + loop.index }}</td>
-              <td class="role {{row_bg}}">
-                <img
-                  class="h-8 pl-2 img-drop-shadow"
-                  src="{{ avatar_data.icon }}"
-                />
-              </td>
-              <td class="role text-left {{row_bg}}">{{ avatar_data.name }}</td>
-              <td>{{ avatar_data.level }}</td>
-              {% set constellation = avatar_data.eidolon %}
-              {% set class_str = "" %}
-              {% if constellation != 0 %}
-              {% set color = ['green', 'cyan', 'blue', 'purple', 'pink', 'red'][constellation - 1] %}
-              {% set class_str = "color " + color %}
-              {% endif %}
-              <td class="{{ class_str }}">
-                <span class="number role inline-block"
-                  >{{ constellation }}</span
-                >
-                <div class="role bg"></div>
-              </td>
-              {% for skill in avatar_data.skills %} {% set talent_style =
-              'talent' %} {% set skill_level = skill.level %} {% if skill_level
-              < 4 %} {% set talent_style = talent_style + ' talent-level-first'
-              %} {% endif %} {% if skill.max_level == skill.level %} {% if
-              loop.index == 1 %} {% set talent_max_style = " talent-level-max"
-              %} {% else %} {% set talent_max_style = " talent-level-max-img" %}
-              {% endif %} {% set talent_style = talent_style + talent_max_style
-              %} {% endif %} {% if skill.max_level != skill.level %} {% if
-              skill_level < 4 %} {% set talent_style = talent_style + '
-              talent-level-1' %} {% elif skill_level < 6 %} {% set talent_style
-              = talent_style + ' talent-level-2' %} {% elif skill_level < 9 %}
-              {% set talent_style = talent_style + ' talent-level-3' %} {% else
-              %} {% set talent_style = talent_style + ' talent-level-4' %} {%
-              endif %} {% endif %}
-              <td class="{{ talent_style }}">{{ skill.level }}</td>
-              {% endfor %} {% if equipment != none %}
-              <td class="weapon-{{ equip_star }}-star text-left pl-3">
-                {% if equipment.level < 10 %} Lv.{{ equipment.level }} {% else
-                %} Lv.{{ equipment.level }} {% endif %}
-              </td>
-              <td
-                class="weapon-{{ equip_star }}-star color border-none {{ ['green', 'cyan', 'blue', 'purple', 'red'][equipment.eidolon - 1] }}"
+
+        <!-- equipment -->
+        {% set equipment = avatar_data.equipment %}
+        <div
+          class="equipment in-shadow bg-black rounded-xl p-2 gap-y-2 text-muted flex flex-col h-full items-end justify-center min-w-[7.4rem]"
+        >
+          {% if equipment %} {% set equip_star = equipment.rarity %}
+          <div
+            class="equip-{{ equip_star }}-star out-shadow w-full flex items-center justify-between rounded ps-3 pe-2 mt-1 pb-1 gap-x-3"
+          >
+            <div
+              class="weapon relative"
+              style="filter: drop-shadow(2px 2px 2px black)"
+            >
+              <img
+                class="size-8 scale-150"
+                src="{{ equipment.icon }}"
+                alt="weapon"
+              />
+              <small
+                class="number absolute -bottom-1 -end-1 bg-dark size-4 text-center rounded-full"
+                >{{ equipment.eidolon }}</small
               >
-                <span class="weapon number">{{ equipment.eidolon }}</span>
-                <div class="weapon bg p-1">
-                  <div class="frame-border border-solid border"></div>
-                </div>
-              </td>
-              <td class="weapon weapon-{{ equip_star }}-star">
-                <img class="h-8 pl-1" src="{{ equipment.icon }}" alt="weapon" />
-              </td>
-              <td class="weapon-{{ equip_star }}-star text-left">
-                {{ equipment.name }}
-              </td>
-              {% else %}
-              <td colspan="4"></td>
-              {% endif %}
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-        <div class="notice">
-          {% if has_more %}
-          <div>
-            *想查看完整数据请在指令中加上<code>all</code>或者<code>全部</code>:
-            <code>/avatars all</code>、<code>全部练度统计</code>
+            </div>
+            <div class="element-text-shadow text-light font-bold font-sans">
+              Lv.{{ equipment.level }}
+            </div>
+          </div>
+          <p class="text-light">{{ equipment.name }}</p>
+          {% else %}
+          <div class="w-full justify-center">
+            <img
+              class="size-16 mx-auto"
+              src="../agent_detail/images/equip-disable-bg.png"
+              alt="no-equip"
+            />
           </div>
           {% endif %}
         </div>
       </div>
+      {% endfor %}
     </div>
+
+    <div class="notice skills text-muted flex items-center gap-x-3">
+      <p>图样说明:</p>
+      <ul>
+        <li>
+          <img src="../agent_detail/images/skill-icon-0.0d9692b6.png" />
+          <span>普通攻击</span>
+        </li>
+        <li>
+          <img src="../agent_detail/images/skill-icon-2.d863591b.png" />
+          <span>闪避</span>
+        </li>
+        <li>
+          <img src="../agent_detail/images/skill-icon-6.3fc55b66.png" />
+          <span>支援技</span>
+        </li>
+        <li>
+          <img src="../agent_detail/images/skill-icon-1.e2f84ffb.png" />
+          <span>特殊技</span>
+        </li>
+        <li>
+          <img src="../agent_detail/images/skill-icon-3.afdb8abe.png" />
+          <span>连携技</span>
+        </li>
+        <li>
+          <img src="../agent_detail/images/skill-icon-5.3d486da1.png" />
+          <span>核心技</span>
+        </li>
+      </ul>
+    </div>
+    {% if has_more %}
+    <div class="notice text-muted">
+      *想查看完整数据请在指令中加上<code>all</code>或者<code>全部</code>:
+      <code>/avatars all</code>、<code>全部练度统计</code>
+    </div>
+    {% endif %}
   </body>
 </html>
