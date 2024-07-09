@@ -27,7 +27,7 @@
     </script>
   </head>
   <body>
-    <div class="mx-auto max-w-[640px] py-4">
+    <div class="mx-auto max-w-[630px] py-4">
       <div
         class="header out-shadow border-4 border-black p-2 rounded-2xl bg-card mb-3"
       >
@@ -43,9 +43,14 @@
             src="{{ avatar }}"
             alt="Avatar"
           />
-          <div class="z-10 flex flex-col justify-center gap-y-2 text-dark">
-            <h1 class="font-bold bg-background text-4xl">{{ nickname }}</h1>
-            <h1 class="text-lg font-bold">UID: {{ uid }}</h1>
+          <div
+            class="z-10 flex-1 flex flex-col justify-center gap-y-2 text-dark"
+          >
+            <h1 class="bg-background text-4xl line-clamp-1">{{ nickname }}</h1>
+            <h1 class="text-lg">UID: {{ uid }}</h1>
+          </div>
+          <div class="z-10">
+            <img class="size-16" src="../../img/logo.png" alt="logo" />
           </div>
         </div>
       </div>
@@ -71,7 +76,7 @@
           stats[key] != "" else "-" %} {% set tag = "capsule" if label ==
           "活跃天数" or label == "获取角色数" %}
           <div
-            class="{{ tag }} item flex font-bold justify-between px-5 items-center py-1 bg-dark rounded-full in-shadow"
+            class="{{ tag }} item flex justify-between px-5 items-center py-1 bg-dark rounded-full in-shadow"
           >
             <div class="text-muted">{{ label }}</div>
             <div class="text-light">{{ value }}</div>

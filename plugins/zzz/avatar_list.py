@@ -164,7 +164,6 @@ class AvatarListPlugin(Plugin):
                 _render_data,
                 viewport={"width": 1040, "height": 500},
                 full_page=True,
-                query_selector=".container",
                 file_type=FileType.PHOTO,
                 ttl=30 * 24 * 60 * 60,
             )

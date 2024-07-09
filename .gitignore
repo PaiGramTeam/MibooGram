@@ -154,6 +154,7 @@ paigram.session-journal
 ### ide ###
 .idea/
 .vscode/
+*.code-workspace
 
 ### Docker ###
 docker-compose.yml
