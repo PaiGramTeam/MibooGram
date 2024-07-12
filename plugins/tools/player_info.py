@@ -1,11 +1,25 @@
+from datetime import datetime, timedelta
 from typing import Optional
 
-from enkanetwork import Assets
+from pydantic import BaseModel
+from simnet import ZZZClient
 
 from core.plugin import Plugin
+from core.services.players.models import PlayersDataBase as Player
 from core.services.players.services import PlayerInfoService, PlayersService
-from metadata.genshin import AVATAR_DATA
+from gram_core.dependence.redisdb import RedisDB
+from gram_core.services.players.models import ExtraPlayerInfo
+from plugins.tools.genshin import GenshinHelper
+from utils.const import RESOURCE_DIR
 from utils.log import logger
+
+
+class PlayerAvatarInfo(BaseModel, frozen=False):
+    player_id: int
+    name_card: str
+    avatar: str
+    nickname: str
+    level: int
 
 
 class PlayerInfoSystem(Plugin):
@@ -13,50 +27,87 @@ class PlayerInfoSystem(Plugin):
         self,
         player_service: PlayersService = None,
         player_info_service: PlayerInfoService = None,
+        helper: GenshinHelper = None,
+        redis: RedisDB = None,
     ) -> None:
-        self.player_info_service = player_info_service
         self.player_service = player_service
+        self.player_info_service = player_info_service
+        self.helper = helper
+        self.cache = redis.client
+        self.qname = "players_info_avatar"
+        self.ttl = 1 * 60 * 60  # 1小时
 
-    async def get_player_info(self, player_id: int, user_id: int, user_name: str):
-        player = await self.player_service.get(user_id, player_id)
-        player_info = await self.player_info_service.get(player)
-        nickname = user_name
-        name_card: Optional[str] = None
-        avatar: Optional[str] = None
-        rarity: int = 5
-        try:
-            if player_info is not None:
-                if player_info.nickname is not None:
-                    nickname = player_info.nickname
-                if player_info.name_card is not None:
-                    name_card = (await self.assets_service.namecard(int(player_info.name_card)).navbar()).as_uri()
-                if player_info.hand_image is not None:
-                    if player_info.hand_image > 10000000:
-                        avatar = (await self.assets_service.avatar(player_info.hand_image).icon()).as_uri()
-                        try:
-                            rarity = {k: v["rank"] for k, v in AVATAR_DATA.items()}[str(player_info.hand_image)]
-                        except KeyError:
-                            logger.warning("未找到角色 %s 的星级", player_info.hand_image)
-                    else:
-                        avatar = Assets.profile_picture(player_info.hand_image).url
-                        rarity = 5
-        except Exception as exc:  # pylint: disable=W0703
-            logger.error("卡片信息请求失败 %s", str(exc))
-        if name_card is None:  # 默认
-            name_card = (await self.assets_service.namecard(0).navbar()).as_uri()
-        if avatar is None:  # 默认
-            avatar = (await self.assets_service.avatar(0).icon()).as_uri()
-        return name_card, avatar, nickname, rarity
+    async def get_form_cache(self, player_id: int) -> Optional[PlayerAvatarInfo]:
+        qname = f"{self.qname}:{player_id}"
+        data = await self.cache.get(qname)
+        if data is None:
+            return None
+        json_data = str(data, encoding="utf-8")
+        return PlayerAvatarInfo.parse_raw(json_data)
 
-    async def get_name_card(self, player_id: int, user_id: int):
-        player = await self.player_service.get(user_id, player_id)
-        player_info = await self.player_info_service.get(player)
-        name_card: Optional[str] = None
+    async def set_form_cache(self, player: PlayerAvatarInfo):
+        qname = f"{self.qname}:{player.player_id}"
+        await self.cache.set(qname, player.json(), ex=self.ttl)
+
+    @staticmethod
+    def get_base_avatar_info(player_id: int, user_name: str) -> PlayerAvatarInfo:
+        res = RESOURCE_DIR / "img"
+        return PlayerAvatarInfo(
+            player_id=player_id,
+            name_card=(res / "home.png").as_uri(),
+            avatar=(res / "avatar.png").as_uri(),
+            nickname=user_name,
+            level=0,
+        )
+
+    async def update_player_info(self, player: "Player", nickname: str, level: int):
+        player_info = await self.player_info_service.get_form_sql(player)
+        if player_info is not None and player_info.create_time is not None:
+            player_info.nickname = nickname
+            if player_info.extra_data is None:
+                player_info.extra_data = ExtraPlayerInfo()
+            player_info.extra_data.level = level
+            await self.player_info_service.update(player_info)
+
+    async def get_player_info_by_cookie(self, player: "Player", user_name: str) -> PlayerAvatarInfo:
+        base_info = self.get_base_avatar_info(player.player_id, user_name)
         try:
-            if player_info is not None and player_info.name_card is not None:
-                name_card = (await self.assets_service.namecard(int(player_info.name_card)).navbar()).as_uri()
-        except Exception as exc:  # pylint: disable=W0703
-            logger.error("卡片信息请求失败 %s", str(exc))
-        if name_card is None:  # 默认
-            name_card = (await self.assets_service.namecard(0).navbar()).as_uri()
-        return name_card
+            async with self.helper.genshin(player.user_id, player_id=player.player_id) as client:
+                client: "ZZZClient"
+                record_card = await client.get_record_card()
+                if record_card is not None:
+                    base_info.nickname = record_card.nickname
+                    base_info.level = record_card.level
+                    await self.update_player_info(player, base_info.nickname, base_info.level)
+        except Exception as e:
+            logger.warning("卡片信息通过 cookie 请求失败 %s", str(e))
+        return base_info
+
+    async def get_player_info(self, player_id: int, user_name: str) -> PlayerAvatarInfo:
+        cache = await self.get_form_cache(player_id)
+        if cache is not None:
+            return cache
+
+        player = await self.player_service.get(None, player_id)
+        base_info = self.get_base_avatar_info(player_id, user_name)
+        if not player:
+            return base_info
+        player_info = await self.player_info_service.get(player)
+        if player_info is None or player_info.create_time is None:
+            return base_info
+        expiration_time = datetime.now() - timedelta(hours=2)
+        if (
+            player_info.last_save_time is None
+            or player_info.extra_data is None
+            or player_info.last_save_time <= expiration_time
+        ):
+            base_info = await self.get_player_info_by_cookie(player, player_info.nickname)
+        else:
+            base_info.nickname = player_info.nickname
+            base_info.level = player_info.extra_data.level
+
+        await self.set_form_cache(base_info)
+        return base_info
+
+    async def get_theme_info(self, player_id: int) -> PlayerAvatarInfo:
+        return await self.get_player_info(player_id, "")

@@ -46,7 +46,12 @@
           <div
             class="z-10 flex-1 flex flex-col justify-center gap-y-2 text-dark"
           >
-            <h1 class="bg-background text-4xl line-clamp-1">{{ nickname }}</h1>
+            <h1 class="bg-background text-4xl line-clamp-1">
+              {{ nickname }}
+              {% if level > 0 %}
+              <span class="text-lg">lv.{{ level }}</span>
+              {% endif %}
+            </h1>
             <h1 class="text-lg">UID: {{ uid }}</h1>
           </div>
           <div class="z-10">

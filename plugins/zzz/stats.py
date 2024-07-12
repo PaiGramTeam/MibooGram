@@ -1,4 +1,3 @@
-import random
 from typing import Optional, TYPE_CHECKING, List
 from telegram.constants import ChatAction
 from telegram.ext import filters
@@ -10,7 +9,7 @@ from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from plugins.tools.genshin import GenshinHelper
-from utils.const import RESOURCE_DIR
+from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 from utils.uid import mask_number
 
@@ -25,9 +24,15 @@ __all__ = ("PlayerStatsPlugins",)
 class PlayerStatsPlugins(Plugin):
     """玩家统计查询"""
 
-    def __init__(self, template: TemplateService, helper: GenshinHelper):
+    def __init__(
+        self,
+        template: TemplateService,
+        helper: GenshinHelper,
+        player_info: PlayerInfoSystem,
+    ):
         self.template_service = template
         self.helper = helper
+        self.player_info = player_info
 
     @handler.command("stats", player=True, block=False)
     @handler.message(filters.Regex("^玩家统计查询(.*)"), player=True, block=False)
@@ -60,11 +65,13 @@ class PlayerStatsPlugins(Plugin):
     async def render(self, client: "ZZZClient", nickname: str) -> RenderResult:
         uid = client.player_id
         user_info = await client.get_zzz_user(uid)
+        player_info = await self.player_info.get_player_info(uid, nickname)
 
         data = {
             "uid": mask_number(uid),
             "stats": user_info.stats,
-            "nickname": nickname,
+            "nickname": player_info.nickname,
+            "level": player_info.level,
             "stats_labels": [
                 ("活跃天数", "active_days"),
                 ("获取角色数", "avatar_num"),
@@ -112,9 +119,9 @@ class PlayerStatsPlugins(Plugin):
         await render_result.edit_inline_media(callback_query)
 
     async def add_theme_data(self, data, player_id: int):
-        res = RESOURCE_DIR / "img"
-        data["avatar"] = (res / "avatar.png").as_uri()
-        data["background"] = (res / "home.png").as_uri()
+        theme_info = await self.player_info.get_theme_info(player_id)
+        data["avatar"] = theme_info.avatar
+        data["background"] = theme_info.name_card
         return data
 
     async def get_inline_use_data(self) -> List[Optional[IInlineUseData]]:

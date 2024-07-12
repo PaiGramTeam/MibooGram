@@ -19,7 +19,7 @@ from gram_core.config import config
 from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from gram_core.services.template.models import RenderGroupResult
 from plugins.tools.genshin import GenshinHelper, CharacterDetails
-from utils.const import RESOURCE_DIR
+from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 from utils.uid import mask_number
 
@@ -69,6 +69,7 @@ class AvatarListPlugin(Plugin):
         wiki_service: WikiService = None,
         helper: GenshinHelper = None,
         character_details: CharacterDetails = None,
+        player_info: PlayerInfoSystem = None,
     ) -> None:
         self.cookies_service = cookies_service
         self.assets_service = assets_service
@@ -76,6 +77,7 @@ class AvatarListPlugin(Plugin):
         self.wiki_service = wiki_service
         self.helper = helper
         self.character_details = character_details
+        self.player_info = player_info
 
     async def get_avatar_data(self, character_id: int, client: "ZZZClient") -> Optional["ZZZCalculatorCharacter"]:
         return await self.character_details.get_character_details(client, character_id)
@@ -179,14 +181,14 @@ class AvatarListPlugin(Plugin):
         return await asyncio.gather(*tasks)
 
     async def add_theme_data(self, data: Dict, player_id: int):
-        res = RESOURCE_DIR / "img"
-        data["avatar"] = (res / "avatar.png").as_uri()
-        data["background"] = (res / "home.png").as_uri()
+        theme_info = await self.player_info.get_theme_info(player_id)
+        data["avatar"] = theme_info.avatar
+        data["background"] = theme_info.name_card
         return data
 
     async def render(self, client: "ZZZClient", all_avatars: bool = False) -> List["RenderResult"]:
         characters: List["ZZZPartialCharacter"] = await self.get_avatars_data(client)
-
+        player_info = await self.player_info.get_player_info(client.player_id, "")
         has_more = (not all_avatars) and len(characters) > MAX_AVATAR_COUNT
         if has_more:
             characters = characters[:MAX_AVATAR_COUNT]
@@ -194,6 +196,8 @@ class AvatarListPlugin(Plugin):
 
         base_render_data = {
             "uid": mask_number(client.player_id),  # 玩家uid
+            "nickname": player_info.nickname,  # 玩家昵称
+            "level": player_info.level,
             "has_more": has_more,  # 是否显示了全部角色
         }
         await self.add_theme_data(base_render_data, client.player_id)

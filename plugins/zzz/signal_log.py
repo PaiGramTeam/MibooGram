@@ -32,7 +32,7 @@ from modules.gacha_log.log import GachaLog
 from modules.gacha_log.migrate import GachaLogMigrate
 from modules.gacha_log.models import GachaLogInfo
 from plugins.tools.genshin import PlayerNotFoundError
-from utils.const import RESOURCE_DIR
+from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 
 try:
@@ -70,6 +70,7 @@ class WishLogPlugin(Plugin.Conversation):
         players_service: PlayersService,
         assets: AssetsService,
         cookie_service: CookiesService,
+        player_info: PlayerInfoSystem,
     ):
         self.template_service = template_service
         self.players_service = players_service
@@ -77,6 +78,7 @@ class WishLogPlugin(Plugin.Conversation):
         self.cookie_service = cookie_service
         self.gacha_log = GachaLog()
         self.wish_photo = None
+        self.player_info = player_info
 
     async def get_player_id(self, user_id: int, player_id: int, offset: int) -> int:
         """获取绑定的游戏ID"""
@@ -543,9 +545,9 @@ class WishLogPlugin(Plugin.Conversation):
                 await png.edit_media(message)
 
     async def add_theme_data(self, data: Dict, player_id: int):
-        res = RESOURCE_DIR / "img"
-        data["avatar"] = (res / "avatar.png").as_uri()
-        data["background"] = (res / "home.png").as_uri()
+        theme_info = await self.player_info.get_theme_info(player_id)
+        data["avatar"] = theme_info.avatar
+        data["background"] = theme_info.name_card
         return data
 
     @staticmethod

@@ -33,6 +33,13 @@
         alt="Avatar"
       />
       <div class="flex-1">
+
+        <div class="nickname text-4xl italic mb-2 px-2 text-light">
+          {{ nickname }}
+          {% if level > 0 %}
+          <span class="text-lg">lv.{{ level }}</span>
+          {% endif %}
+        </div>
         <div class="uid text-light text-2xl">UID: {{ uid }}</div>
       </div>
       <div class="z-10">

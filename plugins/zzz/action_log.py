@@ -13,7 +13,7 @@ from gram_core.services.template.services import TemplateService
 from modules.action_log.client import ActionLogAnalyse
 from plugins.tools.action_log_system import ActionLogSystem
 from plugins.tools.genshin import GenshinHelper
-from utils.const import RESOURCE_DIR
+from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 from utils.uid import mask_number
 
@@ -42,11 +42,13 @@ class ActionLogPlugins(Plugin):
         action_log_service: ActionLogService,
         action_log_system: ActionLogSystem,
         template_service: TemplateService,
+        player_info: PlayerInfoSystem,
     ):
         self.helper = helper
         self.action_log_service = action_log_service
         self.action_log_system = action_log_system
         self.template_service = template_service
+        self.player_info = player_info
 
     @handler.command(command="action_log_import", filters=filters.ChatType.PRIVATE, cookie=True, block=False)
     async def action_log_import(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
@@ -95,9 +97,9 @@ class ActionLogPlugins(Plugin):
         }
 
     async def add_theme_data(self, data: Dict, player_id: int):
-        res = RESOURCE_DIR / "img"
-        data["avatar"] = (res / "avatar.png").as_uri()
-        data["background"] = (res / "home.png").as_uri()
+        theme_info = await self.player_info.get_theme_info(player_id)
+        data["avatar"] = theme_info.avatar
+        data["background"] = theme_info.name_card
         return data
 
     async def render(self, client: "ZZZClient") -> "RenderResult":
