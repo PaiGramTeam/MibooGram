@@ -448,7 +448,7 @@ class GachaLog:
                 {"num": no_four_star, "unit": "抽", "lable": "未出四星"},
                 {"num": five_star_const, "unit": "个", "lable": "五星常驻"},
                 {"num": up_avg, "unit": "抽", "lable": "UP平均"},
-                {"num": up_cost, "unit": "", "lable": "UP花费星琼"},
+                {"num": up_cost, "unit": "", "lable": "UP花费菲林"},
             ],
         ]
 

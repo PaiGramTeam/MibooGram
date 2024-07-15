@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-ch">
+<head>
+    <meta charset="UTF-8">
+    <title>overview</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .overview {
+            border-radius: unset;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% set summarize_class = '' %}
+    {% set overview_class = 'overview-abyss' %}
+    <div class="overview {{ overview_class }}">
+        <div class="title">{{ title }}挑战回顾</div>
+        <div class="summarize  {{ summarize_class }}">
+            <div>
+                <div>UID: {{ uid }}</div>
+                <div class="star">
+                    {% for star in stars %}
+                    <div class="icon icon2 star1{{ star.rating }}"></div>
+                    <span>*{{ star.times }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            <div>
+                <div>本期开始: {{ start_time }}</div>
+                <div>最深抵达: {{ max_floor }}</div>
+            </div>
+            <div>
+                <div>本期结束: {{ end_time }}</div>
+                <div>最快通关: {{ max_dura }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

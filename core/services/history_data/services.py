@@ -1,11 +1,16 @@
 import datetime
-from typing import Dict, List
+from typing import List
 
 from pytz import timezone
-from simnet.models.genshin.chronicle.abyss import SpiralAbyss
-from simnet.models.genshin.diary import Diary
+from simnet.models.starrail.diary import StarRailDiary
+from simnet.models.zzz.chronicle.challenge import ZZZChallenge
 
-from core.services.history_data.models import HistoryData, HistoryDataTypeEnum, HistoryDataAbyss, HistoryDataLedger
+from core.services.history_data.models import (
+    HistoryData,
+    HistoryDataTypeEnum,
+    HistoryDataAbyss,
+    HistoryDataLedger,
+)
 from gram_core.base_service import BaseService
 from gram_core.services.history_data.services import HistoryDataBaseServices
 
@@ -35,12 +40,12 @@ class HistoryDataAbyssServices(BaseService, HistoryDataBaseServices):
 
     @staticmethod
     def exists_data(data: HistoryData, old_data: List[HistoryData]) -> bool:
-        floor = data.data.get("floors")
-        return any(d.data.get("floors") == floor for d in old_data)
+        floors = data.data.get("abyss_data", {}).get("all_floor_detail")
+        return any(d.data.get("abyss_data", {}).get("all_floor_detail") == floors for d in old_data)
 
     @staticmethod
-    def create(user_id: int, abyss_data: SpiralAbyss, character_data: Dict[int, int]):
-        data = HistoryDataAbyss(abyss_data=abyss_data, character_data=character_data)
+    def create(user_id: int, abyss_data: ZZZChallenge):
+        data = HistoryDataAbyss(abyss_data=abyss_data)
         json_data = data.json(by_alias=True, encoder=json_encoder)
         return HistoryData(
             user_id=user_id,
@@ -55,7 +60,7 @@ class HistoryDataLedgerServices(BaseService, HistoryDataBaseServices):
     DATA_TYPE = HistoryDataTypeEnum.LEDGER.value
 
     @staticmethod
-    def create(user_id: int, diary_data: Diary):
+    def create(user_id: int, diary_data: StarRailDiary):
         data = HistoryDataLedger(diary_data=diary_data)
         json_data = data.json(by_alias=True, encoder=json_encoder)
         return HistoryData(
