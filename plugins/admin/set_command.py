@@ -31,6 +31,8 @@ class SetCommandPlugin(Plugin):
             # Cookie 查询类
             BotCommand("sign", "米游社绝区零每日签到"),
             BotCommand("dailynote_tasks", "自动便笺提醒"),
+            BotCommand("challenge", "防卫战信息查询"),
+            BotCommand("challenge_history", "防卫战历史信息查询"),
             # 其他
             BotCommand("setuid", "添加/重设UID"),
             BotCommand("setcookie", "添加/重设Cookie"),
