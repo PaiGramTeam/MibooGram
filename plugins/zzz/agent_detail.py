@@ -70,7 +70,7 @@ class NeedClient(Exception):
     """无缓存，需要 StarRailClient"""
 
 
-class AgentDetailPlugin(Plugin.Conversation):
+class AgentDetailPlugin(Plugin):
     """角色详细信息查询"""
 
     def __init__(

@@ -1,6 +1,7 @@
 from functools import partial
 from io import BytesIO
 from typing import Optional, TYPE_CHECKING, List, Union, Tuple, Dict
+from urllib.parse import urlencode
 
 from simnet import ZZZClient, Region
 from simnet.models.zzz.wish import ZZZBannerType
@@ -177,8 +178,8 @@ class WishLogPlugin(Plugin.Conversation):
                 return True
         return False
 
-    async def gen_authkey(self, uid: int) -> Optional[str]:
-        player_info = await self.players_service.get_player(uid, region=RegionEnum.HYPERION)
+    async def gen_authkey(self, uid: int, player_id: int) -> Optional[str]:
+        player_info = await self.players_service.get_player(uid, region=RegionEnum.HYPERION, player_id=player_id)
         if player_info is not None:
             cookies = await self.cookie_service.get(uid, account_id=player_info.account_id)
             if cookies is not None and cookies.data and "stoken" in cookies.data:
@@ -219,7 +220,7 @@ class WishLogPlugin(Plugin.Conversation):
             await message.reply_text("请发送文件或链接")
             return INPUT_URL
         if message.text == "自动导入":
-            authkey = await self.gen_authkey(user.id)
+            authkey = await self.gen_authkey(user.id, player_id)
             if not authkey:
                 await message.reply_text(
                     "自动生成 authkey 失败，请尝试通过其他方式导入。", reply_markup=ReplyKeyboardRemove()
@@ -331,6 +332,29 @@ class WishLogPlugin(Plugin.Conversation):
         except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text(config.notice.user_not_found)
+
+    @handler.command(command="signal_log_url", filters=filters.ChatType.PRIVATE, block=False)
+    @handler.command(command="gacha_log_url", filters=filters.ChatType.PRIVATE, block=False)
+    @handler.message(filters=filters.Regex("^抽卡记录链接(.*)") & filters.ChatType.PRIVATE, block=False)
+    async def command_start_url(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
+        uid, offset = self.get_real_uid_or_offset(update)
+        message = update.effective_message
+        user = update.effective_user
+        player_id = await self.get_player_id(user.id, uid, offset)
+        logger.info("用户 %s[%s] 生成抽卡记录链接命令请求 player_id[%s]", user.full_name, user.id, player_id)
+        authkey = await self.gen_authkey(user.id, player_id)
+        if not authkey:
+            await message.reply_text("生成失败，仅国服且绑定 stoken 的用户才能生成抽卡记录链接")
+        else:
+            url = "https://public-operation-nap.mihoyo.com/common/gacha_record/api/getGachaLog"
+            params = {
+                "authkey_ver": 1,
+                "lang": "zh-cn",
+                "real_gacha_type": 1,
+                "game_biz": "nap_cn",
+                "authkey": authkey,
+            }
+            await message.reply_text(f"{url}?{urlencode(params)}", disable_web_page_preview=True)
 
     async def rander_wish_log_analysis(
         self, user_id: int, player_id: int, pool_type: ZZZBannerType
