@@ -55,22 +55,22 @@ class PlayerInfoService(BaseService):
             await self._players_info_repository.add(PlayerInfoSQLModel.from_orm(player_info))
             await self.set_form_cache(player_info)
             return player_info
-        if player_info.is_update:
-            expiration_time = datetime.now() - timedelta(days=7)
-            if player_info.last_save_time is None or player_info.last_save_time <= expiration_time:
-                player_info_enka = await self.get_player_info_from_enka(player.player_id)
-                if player_info_enka is None:
-                    player_info.last_save_time = datetime.now()
-                    await self._players_info_repository.update(player_info)
-                    await self.set_form_cache(player_info)
-                    return player_info
-                player_info.nickname = player_info_enka.nickname
-                player_info.name_card = player_info_enka.namecard.id
-                player_info.signature = player_info_enka.signature
-                player_info.hand_image = player_info_enka.avatar.id or player_info_enka.avatar.avatar_id
-                player_info.nickname = player_info_enka.nickname
-                player_info.last_save_time = datetime.now()
-                await self._players_info_repository.update(player_info)
+        # if player_info.is_update:
+        #     expiration_time = datetime.now() - timedelta(days=7)
+        #     if player_info.last_save_time is None or player_info.last_save_time <= expiration_time:
+        #         player_info_enka = await self.get_player_info_from_enka(player.player_id)
+        #         if player_info_enka is None:
+        #             player_info.last_save_time = datetime.now()
+        #             await self._players_info_repository.update(player_info)
+        #             await self.set_form_cache(player_info)
+        #             return player_info
+        #         player_info.nickname = player_info_enka.nickname
+        #         player_info.name_card = player_info_enka.namecard.id
+        #         player_info.signature = player_info_enka.signature
+        #         player_info.hand_image = player_info_enka.avatar.id or player_info_enka.avatar.avatar_id
+        #         player_info.nickname = player_info_enka.nickname
+        #         player_info.last_save_time = datetime.now()
+        #         await self._players_info_repository.update(player_info)
         await self.set_form_cache(player_info)
         return player_info
 
