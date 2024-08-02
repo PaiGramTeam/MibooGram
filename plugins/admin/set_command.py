@@ -27,6 +27,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("signal_log_export", "导出调频记录"),
             BotCommand("signal_log_delete", "删除调频记录"),
             BotCommand("avatars", "查询角色练度"),
+            BotCommand("player_card", "角色卡片"),
             BotCommand("agent_detail", "角色详细信息"),
             # Cookie 查询类
             BotCommand("sign", "米游社绝区零每日签到"),
