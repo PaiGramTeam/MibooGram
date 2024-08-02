@@ -15,6 +15,7 @@ from core.plugin import Plugin, handler
 from core.services.template.services import TemplateService
 from metadata.shortname import roleToName, idToRole
 from plugins.tools.genshin import GenshinHelper
+from plugins.tools.player_detail import PlayerDetailHelper, NeedClient
 from utils.log import logger
 from utils.uid import mask_number
 
@@ -66,10 +67,6 @@ color_map = {
 }
 
 
-class NeedClient(Exception):
-    """无缓存，需要 StarRailClient"""
-
-
 class AgentDetailPlugin(Plugin):
     """角色详细信息查询"""
 
@@ -85,47 +82,12 @@ class AgentDetailPlugin(Plugin):
         self.redis = redis.client
         self.expire = 15 * 60  # 15分钟
         self.kitsune: Optional[str] = None
-
-    async def set_characters_for_redis(
-        self,
-        uid: int,
-        nickname: str,
-        data: "ZZZCalculatorCharacterDetails",
-    ) -> None:
-        data_k = f"{self.qname}:{uid}:data"
-        json_data = data.json(by_alias=True)
-        await self.redis.set(data_k, json_data, ex=self.expire)
-
-    async def del_characters_for_redis(
-        self,
-        uid: int,
-    ) -> None:
-        data_k = f"{self.qname}:{uid}:data"
-        await self.redis.delete(data_k)
-
-    async def get_characters_for_redis(
-        self,
-        uid: int,
-    ) -> Tuple[Optional[str], Optional["ZZZCalculatorCharacterDetails"]]:
-        data_k = f"{self.qname}:{uid}:data"
-        data_v = await self.redis.get(data_k)
-        if data_v is None:
-            return None, None
-        json_data = str(data_v, encoding="utf-8")
-        return "", ZZZCalculatorCharacterDetails.parse_raw(json_data)
+        self.player_detail_helper = PlayerDetailHelper(helper, redis)
 
     async def get_characters(
         self, uid: int, client: "ZZZClient" = None
     ) -> Tuple[Optional[str], Optional["ZZZCalculatorCharacterDetails"]]:
-        nickname, data = await self.get_characters_for_redis(uid)
-        if nickname is None or data is None:
-            if not client:
-                raise NeedClient
-            data1 = await client.get_zzz_characters()
-            cids = [i.id for i in data1.characters]
-            data = await client.get_zzz_character_info(cids)
-            await self.set_characters_for_redis(client.player_id, "", data)
-        return nickname, data
+        return await self.player_detail_helper.get_characters(uid, client)
 
     def parse_render_data(self, data: "ZZZCalculatorCharacterDetails", nickname: str, ch_id: int, uid: int):
         char = None

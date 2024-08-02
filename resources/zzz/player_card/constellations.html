@@ -1,0 +1,13 @@
+<div class="flex-1 flex items-end justify-center">
+  <div class="flex pb-2">
+    {% for item in images.constellations %}
+    <div
+      class="w-16 h-16 flex items-center justify-center bg-contain bg-no-repeat bg-center
+      {%- if loop.index > character.rank %} grayscale opacity-50 {% endif %}"
+      style="background-image: url('img/talent-{{ character_detail.element.name | lower }}.png')"
+    >
+      <span>{{ loop.index }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
