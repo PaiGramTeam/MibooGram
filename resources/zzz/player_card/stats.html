@@ -1,0 +1,10 @@
+<div class="rounded-lg bg-black bg-opacity-20">
+  {% for prop in character.properties %}
+  <div
+    class="px-7 py-1.5 flex justify-between even:bg-white even:bg-opacity-10"
+  >
+    <div>{{ prop.property_name }}</div>
+    <div class="italic">{{ prop.final }}</div>
+  </div>
+  {% endfor %}
+</div>
