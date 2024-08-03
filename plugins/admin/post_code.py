@@ -21,7 +21,7 @@ from utils.log import logger
 if TYPE_CHECKING:
     from telegram import Update, Message
     from telegram.ext import ContextTypes, Job
-    from modules.apihelper.models.genshin.hyperion import LiveCode, LiveCodeHoYo
+    from modules.apihelper.models.genshin.hyperion import LiveCode, LiveCodeHoYo, PostInfo
 
 
 class PostCodeHandlerData:
@@ -92,22 +92,14 @@ class PostCodeHandlerData:
 
 
 SEND_POST, CHECK_COMMAND, GET_POST_CHANNEL = range(10900, 10903)
-POST_TEMPLATE = """<b>《原神》%s 版本前瞻特别节目兑换码</b>
+POST_TEMPLATE = """<b>《绝区零》%s 版本前瞻特别节目兑换码</b>
 
-国服：
-<code>%s</code> - 原石 ×100，精锻用魔矿 x10
-<code>%s</code> - 原石 ×100，大英雄的经验 x5
-<code>%s</code> - 原石 ×100，摩拉 x50000
-
-国际服：
-<code>%s</code> - 原石 ×100，精锻用魔矿 x10
-<code>%s</code> - 原石 ×100，大英雄的经验 x5
-<code>%s</code> - 原石 ×100，摩拉 x50000
+<code>%s</code> - 复色菲林 x300, 资深调查员记录 x2, 音擎能源模块 x3, 丁尼 x30000
 
 兑换码过期时间 %s UTC+8，请尽快领取。"""
 UPDATE_TEMPLATE = """可能的兑换码发放时间：
 
-%s、%s、%s
+%s
 
 更新可能延迟三到五分钟，请耐心等待。"""
 
@@ -115,13 +107,13 @@ UPDATE_TEMPLATE = """可能的兑换码发放时间：
 class PostCode(Plugin.Conversation):
     """版本前瞻特别节目兑换码推送"""
 
-    MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "推送并且定时更新"], ["退出"]], True, True)
-    SUBJECT_RE = re.compile(r"一起来看《原神》(\d+\.\d+)版本前瞻特别节目吧！")
+    MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道"], ["退出"]], True, True)
+    SUBJECT_RE = re.compile(r"》(\d+\.\d+)版本.*?前瞻讨论活动开启")
     ACT_RE = re.compile(r"act_id=(.*?)&")
 
     def __init__(self):
-        self.gids = 2
-        self.type_id = 3
+        self.gids = 8
+        self.type_id = 2
 
     @staticmethod
     def get_bbs_client() -> Hyperion:
@@ -146,8 +138,8 @@ class PostCode(Plugin.Conversation):
             return match[0], post
         return None, None
 
-    def init_act_id(self, post: Dict) -> Optional[str]:
-        structured_content = post.get("structured_content")
+    def init_act_id(self, post: "PostInfo") -> Optional[str]:
+        structured_content = post["post"]["post"]["structured_content"]
         if not structured_content:
             return None
         structured_data = json.loads(structured_content)
@@ -169,17 +161,18 @@ class PostCode(Plugin.Conversation):
             version, final_post = self.init_version(news.get("list", []))
             if not final_post:
                 raise ValueError("未找到版本前瞻特别节目文章")
-            act_id = self.init_act_id(final_post)
-            if not act_id:
-                raise ValueError("未找到文章中的 act_id")
-            live_info = await client.get_live_info(act_id)
-            ver_code = live_info.code_ver
+            # final_post_info = await client.get_post_info(self.gids, final_post.get("post_id"))
+            # act_id = self.init_act_id(final_post_info)
+            # if not act_id:
+            #     raise ValueError("未找到文章中的 act_id")
+            # live_info = await client.get_live_info(act_id)
+            # ver_code = live_info.code_ver
             post_code_handler_data.version = version
-            post_code_handler_data.act_id = act_id
-            post_code_handler_data.ver_code = ver_code
-            post_code_handler_data.mys_code = await client.get_live_code(act_id, ver_code)
+            # post_code_handler_data.act_id = act_id
+            # post_code_handler_data.ver_code = ver_code
+            # post_code_handler_data.mys_code = await client.get_live_code(act_id, ver_code)
             post_code_handler_data.hoyo_code = await client.get_live_code_hoyo(self.gids)
-            if len(post_code_handler_data.mys_code) != 3:
+            if len(post_code_handler_data.hoyo_code) != 1:
                 raise ValueError("获取兑换码数据成功，但是数量不对")
             return True
         finally:
@@ -218,15 +211,15 @@ class PostCode(Plugin.Conversation):
             return ConversationHandler.END
         if message.text == "推送频道":
             return await self.get_channel(update, context)
-        if message.text == "推送并且定时更新":
-            if not post_code_handler_data.real_need_update():
-                await message.reply_text(
-                    "所有兑换码已发放，无需创建更新任务，将直接推送。", reply_markup=ReplyKeyboardRemove()
-                )
-                return await self.get_channel(update, context)
-            post_code_handler_data.need_update = True
-            await message.reply_text(post_code_handler_data.get_need_update_text())
-            return await self.get_channel(update, context)
+        # if message.text == "推送并且定时更新":
+        #     if not post_code_handler_data.real_need_update():
+        #         await message.reply_text(
+        #             "所有兑换码已发放，无需创建更新任务，将直接推送。", reply_markup=ReplyKeyboardRemove()
+        #         )
+        #         return await self.get_channel(update, context)
+        #     post_code_handler_data.need_update = True
+        #     await message.reply_text(post_code_handler_data.get_need_update_text())
+        #     return await self.get_channel(update, context)
         return ConversationHandler.END
 
     async def get_channel(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
@@ -279,7 +272,7 @@ class PostCode(Plugin.Conversation):
         await message.reply_text("正在推送", reply_markup=ReplyKeyboardRemove())
         channel_id, channel_username = post_code_handler_data.channel_id, post_code_handler_data.channel_username
         post_text = post_code_handler_data.get_text()
-        post_text += f"\n\n@{channel_username}"
+        post_text += f"\n\n@{channel_username} #前瞻特别节目兑换码"
         try:
             msg = await context.bot.send_message(channel_id, post_text, parse_mode=ParseMode.HTML)
             if post_code_handler_data.need_update:
@@ -318,7 +311,7 @@ class PostCode(Plugin.Conversation):
                 post_code_handler_data.mys_code = mys_code
                 post_code_handler_data.hoyo_code = hoyo_code
                 post_text = post_code_handler_data.get_text()
-                post_text += f"\n\n@{channel_username}"
+                post_text += f"\n\n@{channel_username} #前瞻特别节目兑换码"
                 await post_code_handler_data.channel_msg.edit_text(post_text, parse_mode=ParseMode.HTML)
                 logger.success("PostCode 兑换码发生变化，已更新频道消息")
             else:

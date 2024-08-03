@@ -237,8 +237,8 @@ class Hyperion(HyperionBase):
                 for code_data in exchange_group.get("bonuses", []):
                     codes.append(LiveCodeHoYo(**code_data))
                 break
-        for _ in range(len(codes), 3):
-            codes.append(LiveCodeHoYo(exchange_code="", offline_at=guess_offline_at))
+        # for _ in range(len(codes), 3):
+        #     codes.append(LiveCodeHoYo(exchange_code="", offline_at=guess_offline_at))
         return codes
 
     async def close(self):

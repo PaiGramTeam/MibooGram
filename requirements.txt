@@ -19,7 +19,7 @@ asyncmy==0.2.9
 attrs==23.2.0
 backports-zoneinfo==0.2.1; python_version < "3.9"
 beautifulsoup4==4.12.3
-black==24.4.2
+black==24.8.0
 cachetools==5.3.3
 certifi==2024.7.4
 cffi==1.16.0; platform_python_implementation != "PyPy"
@@ -104,8 +104,8 @@ tzdata==2024.1; platform_system == "Windows"
 tzlocal==5.2
 ujson==5.10.0
 urllib3==2.2.2
-uvicorn==0.30.4
-uvicorn[standard]==0.30.4
+uvicorn==0.30.5
+uvicorn[standard]==0.30.5
 uvloop==0.19.0; (sys_platform != "cygwin" and sys_platform != "win32") and platform_python_implementation != "PyPy"
 watchfiles==0.22.0
 websockets==12.0

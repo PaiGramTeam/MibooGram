@@ -185,7 +185,7 @@ class LiveCodeHoYo(BaseModel):
 
     @staticmethod
     def guess_offline_at() -> datetime:
-        return datetime.now().replace(hour=12, minute=0, second=0, microsecond=0) + timedelta(days=1)
+        return datetime.now().replace(hour=23, minute=59, second=59, microsecond=59) + timedelta(days=1)
 
 
 class PostTypeEnum(str, Enum):
