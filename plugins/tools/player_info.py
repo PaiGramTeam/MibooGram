@@ -60,13 +60,16 @@ class PlayerInfoSystem(Plugin):
             level=0,
         )
 
-    async def update_player_info(self, player: "Player", nickname: str, level: int):
+    async def update_player_info(self, player: "Player", base_info: "PlayerAvatarInfo"):
         player_info = await self.player_info_service.get_form_sql(player)
         if player_info is not None and player_info.create_time is not None:
-            player_info.nickname = nickname
-            if player_info.extra_data is None:
-                player_info.extra_data = ExtraPlayerInfo()
-            player_info.extra_data.level = level
+            player_info.nickname = base_info.nickname
+            ex = player_info.extra_data
+            player_info.extra_data = ExtraPlayerInfo()
+            if ex is not None:
+                ex.copy_to(player_info.extra_data)
+            player_info.extra_data.level = base_info.level
+            player_info.extra_data.avatar = base_info.avatar
             await self.player_info_service.update(player_info)
 
     async def get_player_info_by_cookie(self, player: "Player", user_name: str) -> PlayerAvatarInfo:
@@ -75,10 +78,14 @@ class PlayerInfoSystem(Plugin):
             async with self.helper.genshin(player.user_id, player_id=player.player_id) as client:
                 client: "ZZZClient"
                 record_card = await client.get_record_card()
+                index = await client.get_zzz_user()
                 if record_card is not None:
                     base_info.nickname = record_card.nickname
                     base_info.level = record_card.level
-                    await self.update_player_info(player, base_info.nickname, base_info.level)
+                if index is not None:
+                    base_info.avatar = index.cur_head_icon_url
+                if base_info.level:
+                    await self.update_player_info(player, base_info)
         except Exception as e:
             logger.warning("卡片信息通过 cookie 请求失败 %s", str(e))
         return base_info
@@ -103,8 +110,9 @@ class PlayerInfoSystem(Plugin):
         ):
             base_info = await self.get_player_info_by_cookie(player, player_info.nickname)
         else:
-            base_info.nickname = player_info.nickname
-            base_info.level = player_info.extra_data.level
+            base_info.nickname = player_info.nickname or ""
+            base_info.avatar = player_info.extra_data.avatar or base_info.avatar
+            base_info.level = player_info.extra_data.level or 0
 
         await self.set_form_cache(base_info)
         return base_info

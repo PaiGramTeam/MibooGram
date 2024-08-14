@@ -36,7 +36,7 @@
       </div>
       <div class="list">
         <div class="item">
-          <img class="icon" src="items/Investigation-Point.png" alt="" />
+          <img class="icon" src="./items/IconCoin.webp" alt="" />
           <div class="name">录像店经营</div>
           <div class="detail {% if exp_status == 'DONE' %}red{% endif %}">
             {% if exp_status == 'DONE' %} 已完成 {% else %} 正在营业 {% endif %}
@@ -57,6 +57,24 @@
             {% if card_sign_status %} 已完成 {% else %} 未完成 {% endif %}
           </span>
         </div>
+        {% if bounty_commission %}
+        <div class="item">
+          <img class="icon" src="./items/ChallengeShopCoin.webp" alt="" />
+          <div class="name">悬赏委托</div>
+          <span class="detail {% if bounty_commission.num != bounty_commission.total %}red{% endif %}">
+            {{ bounty_commission.num }}/{{ bounty_commission.total }}
+          </span>
+        </div>
+        {% endif %}
+        {% if survey_points %}
+        <div class="item">
+          <img class="icon" src="./items/Investigation-Point.png" alt="" />
+          <div class="name">调查点数</div>
+          <span class="detail {% if survey_points.num != survey_points.total %}red{% endif %}">
+            {{ survey_points.num }}/{{ survey_points.total }}
+          </span>
+        </div>
+        {% endif %}
       </div>
     </div>
   </body>

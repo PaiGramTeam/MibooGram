@@ -75,10 +75,12 @@ class PlayerStatsPlugins(Plugin):
             "stats_labels": [
                 ("活跃天数", "active_days"),
                 ("获取角色数", "avatar_num"),
-                ("绳网声望", "world_level_name"),
+                ("达成成就数", "achievement_count"),
                 ("式舆防卫战防线", "cur_period_zone_layer_count"),
                 ("获得邦布数", "buddy_num"),
+                ("绳网声望", "world_level_name"),
             ],
+            "cat_notes_list": user_info.cat_notes_list,
             "style": "main",  # nosec
         }
         await self.add_theme_data(data, uid)

@@ -55,11 +55,13 @@ class DailyNotePlugin(Plugin):
             "current_train_score": daily_info.current_train_score,
             "max_train_score": daily_info.max_train_score,
             "card_sign_status": daily_info.card_sign == ZZZNoteCardSignState.DONE,
+            "bounty_commission": daily_info.bounty_commission,
+            "survey_points": daily_info.survey_points,
         }
         render_result = await self.template_service.render(
             "zzz/daily_note/daily_note.jinja2",
             render_data,
-            {"width": 600, "height": 390},
+            {"width": 600, "height": 480},
             full_page=False,
             ttl=8 * 60,
         )
