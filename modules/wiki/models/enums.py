@@ -47,3 +47,8 @@ class ZZZRank(str, Enum):
     def int(self):
         value_map = {"S": 5, "A": 4, "B": 3, "C": 2, "D": 1, "NULL": 0}
         return value_map[self.value]
+
+    @staticmethod
+    def get_rank(value: int):
+        value_map = {5: "S", 4: "A", 3: "B", 2: "C", 1: "D", 0: "NULL"}
+        return ZZZRank(value_map[value])

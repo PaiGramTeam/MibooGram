@@ -53,7 +53,7 @@
                                 <div class="element" style="background-image: url('../../img/attribute/{{ character.element_type }}.png')"></div>
                                 <div class="icon"
                                      style="background-image: url('../../background/rarity/half/{{ character.rarity }}.png')">
-                                    <img src="{{ character.icon }}" alt=""/>
+                                    <img src="{{ character_icons[character.id] }}" alt=""/>
                                 </div>
                                 <div class="caption">Lv.{{ character.level }}</div>
                             </div>
@@ -63,7 +63,7 @@
                             <div class="character">
                                 <div class="icon"
                                      style="background-image: url('../../background/rarity/half/{{ character.rarity }}.png')">
-                                    <img src="{{ character.icon }}" alt=""/>
+                                    <img src="{{ buddy_icons[character.id] }}" alt=""/>
                                 </div>
                                 <div class="caption">Lv.{{ character.level }}</div>
                             </div>

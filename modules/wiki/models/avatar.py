@@ -22,7 +22,7 @@ class Avatar(BaseModel, frozen=False):
     """ 元素 """
     speciality: ZZZSpeciality
     """ 特性 """
-    icon: List[str] = ["", "", ""]
+    icon: List[str] = ["", "", "", ""]
     """ 图标 """
 
     @property
@@ -30,9 +30,13 @@ class Avatar(BaseModel, frozen=False):
         return self.icon[0]
 
     @property
-    def normal(self) -> str:
+    def square(self) -> str:
         return self.icon[1]
 
     @property
-    def gacha(self) -> str:
+    def normal(self) -> str:
         return self.icon[2]
+
+    @property
+    def gacha(self) -> str:
+        return self.icon[3]

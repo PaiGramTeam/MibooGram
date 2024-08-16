@@ -12,6 +12,8 @@ class Buddy(BaseModel):
     """英文名称"""
     icon: str = ""
     """图标"""
+    square: str = ""
+    """方形图标"""
     rank: ZZZRank = ZZZRank.NULL
     """ 星级 """
 

@@ -90,11 +90,14 @@ class _AvatarAssets(_AssetsService):
             base_path.mkdir(exist_ok=True, parents=True)
             gacha_path = base_path / "gacha.png"
             icon_path = base_path / "icon.png"
+            square_path = base_path / "square.png"
             normal_path = base_path / "normal.png"
             if not gacha_path.exists():
                 tasks.append(self._download(icon.gacha, gacha_path))
             if not icon_path.exists():
                 tasks.append(self._download(icon.icon_, icon_path))
+            if not square_path.exists():
+                tasks.append(self._download(icon.square, square_path))
             if not normal_path.exists():
                 tasks.append(self._download(icon.normal, normal_path))
 
@@ -135,6 +138,10 @@ class _AvatarAssets(_AssetsService):
     def icon(self, target: StrOrInt, second_target: StrOrInt = None) -> Path:
         icon = self.get_target(target, second_target)
         return self.get_path(icon, "icon")
+
+    def square(self, target: StrOrInt, second_target: StrOrInt = None) -> Path:
+        icon = self.get_target(target, second_target)
+        return self.get_path(icon, "square")
 
     def normal(self, target: StrOrInt, second_target: StrOrInt = None) -> Path:
         icon = self.get_target(target, second_target)
@@ -218,10 +225,13 @@ class _BuddyAssets(_AssetsService):
         for icon in self.data:
             webp_path = self.path / f"{icon.id}.webp"
             png_path = self.path / f"{icon.id}.png"
+            square_path = self.path / f"{icon.id}_square.png"
             if not webp_path.exists() and icon.webp:
                 tasks.append(self._download(icon.webp, webp_path))
             if not png_path.exists() and icon.png:
                 tasks.append(self._download(icon.png, png_path))
+            if not square_path.exists() and icon.square:
+                tasks.append(self._download(icon.square, square_path))
             if len(tasks) >= 100:
                 await asyncio.gather(*tasks)
                 tasks = []
@@ -229,8 +239,9 @@ class _BuddyAssets(_AssetsService):
             await asyncio.gather(*tasks)
         logger.info("邦布素材图标初始化完成")
 
-    def get_path(self, icon: Buddy, ext: str) -> Path:
-        path = self.path / f"{icon.id}.{ext}"
+    def get_path(self, icon: Buddy, ext: str, square: bool = False) -> Path:
+        square_str = "_square" if square else ""
+        path = self.path / f"{icon.id}{square_str}.{ext}"
         return path
 
     def get_by_id(self, id_: int) -> Optional[Buddy]:
@@ -265,6 +276,10 @@ class _BuddyAssets(_AssetsService):
         if png_path.exists():
             return png_path
         raise AssetsCouldNotFound("邦布素材图标不存在", target)
+
+    def square(self, target: StrOrInt, second_target: StrOrInt = None) -> Path:
+        icon = self.get_target(target, second_target)
+        return self.get_path(icon, "png", square=True)
 
 
 class _EquipmentSuitAssets(_AssetsService):

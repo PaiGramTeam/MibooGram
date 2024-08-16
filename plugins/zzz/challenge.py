@@ -194,19 +194,31 @@ class ChallengePlugin(Plugin):
 
         self.log_user(update, logger.info, "[bold]防卫战挑战数据[/bold]: 成功发送图片", extra={"markup": True})
 
-    @staticmethod
-    def get_floor_data(abyss_data: "ZZZChallenge", floor: int):
+    def get_floor_data(self, abyss_data: "ZZZChallenge", floor: int):
         try:
             floor_data = abyss_data.floors[-floor]
         except IndexError:
             floor_data = None
         if not floor_data:
             raise AbyssUnlocked()
+
+        character_icons = {
+            ch.id: self.assets_service.avatar.square(ch.id).as_uri()
+            for ch in floor_data.node_1.avatars + floor_data.node_2.avatars
+        }
+        buddy_icons = {
+            bu.id: self.assets_service.buddy.square(bu.id).as_uri()
+            for bu in [floor_data.node_1.buddy, floor_data.node_2.buddy]
+            if bu
+        }
+
         render_data = {
             "floor": floor_data,
             "floor_time": floor_data.floor_challenge_time.datetime.astimezone(TZ).strftime("%Y-%m-%d %H:%M:%S"),
             "floor_nodes": [floor_data.node_1, floor_data.node_2],
             "floor_num": floor,
+            "character_icons": character_icons,
+            "buddy_icons": buddy_icons,
         }
         return render_data
 
