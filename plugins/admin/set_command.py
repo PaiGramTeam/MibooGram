@@ -26,6 +26,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("signal_log_import", "导入调频记录"),
             BotCommand("signal_log_export", "导出调频记录"),
             BotCommand("signal_log_delete", "删除调频记录"),
+            BotCommand("signal_log_online_view", "调频记录在线浏览"),
             BotCommand("avatars", "查询角色练度"),
             BotCommand("player_card", "角色卡片"),
             BotCommand("agent_detail", "角色详细信息"),
