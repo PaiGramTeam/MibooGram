@@ -27,6 +27,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("signal_log_export", "导出调频记录"),
             BotCommand("signal_log_delete", "删除调频记录"),
             BotCommand("signal_log_online_view", "调频记录在线浏览"),
+            BotCommand("signal_log_rank", "抽卡排行榜"),
             BotCommand("avatars", "查询角色练度"),
             BotCommand("player_card", "角色卡片"),
             BotCommand("agent_detail", "角色详细信息"),
@@ -69,6 +70,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("get_chat", "获取会话信息"),
             BotCommand("add_block", "添加黑名单"),
             BotCommand("del_block", "移除黑名单"),
+            BotCommand("signal_log_rank_recount", "重新统计抽卡排行榜"),
         ]
         await context.bot.set_my_commands(
             commands=group_command
