@@ -1,6 +1,6 @@
 import datetime
 from asyncio import sleep
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Dict
 
 from simnet.errors import (
     TimedOut as SimnetTimedOut,
@@ -21,6 +21,7 @@ from gram_core.services.cookies import CookiesService
 from gram_core.services.cookies.models import CookiesStatusEnum
 from plugins.zzz.challenge import ChallengePlugin
 from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
+from plugins.zzz.ledger import LedgerPlugin
 from utils.log import logger
 
 if TYPE_CHECKING:
@@ -72,6 +73,36 @@ class RefreshHistoryJob(Plugin):
         notice_text = NOTICE_TEXT % ("防卫战历史记录", now, uid, "挑战记录")
         await self.send_notice(context, user_id, notice_text)
 
+    async def _save_ledger_data(self, client: "ZZZClient", year: int, month: int) -> bool:
+        req_month = f"{year}0{month}" if month < 10 else f"{year}{month}"
+        diary_info = await client.get_zzz_diary(client.player_id, month=req_month)
+        return await LedgerPlugin.save_ledger_data(self.history_data_ledger, client.player_id, diary_info)
+
+    @staticmethod
+    def get_ledger_months() -> Dict[int, int]:
+        now = datetime.datetime.now()
+        now_time = (now - datetime.timedelta(days=1)) if now.day == 1 and now.hour <= 4 else now
+        months = {}
+        last_month = now_time.replace(day=1) - datetime.timedelta(days=1)
+        months[last_month.month] = last_month.year
+
+        last_month = last_month.replace(day=1) - datetime.timedelta(days=1)
+        months[last_month.month] = last_month.year
+        return months
+
+    async def save_ledger_data(self, client: "ZZZClient") -> bool:
+        months = self.get_ledger_months()
+        ok = False
+        for month, year in months.items():
+            if await self._save_ledger_data(client, year, month):
+                ok = True
+        return ok
+
+    async def send_ledger_notice(self, context: "ContextTypes.DEFAULT_TYPE", user_id: int, uid: int):
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        notice_text = NOTICE_TEXT % ("绳网月报历史记录", now, uid, "绳网月报历史记录")
+        await self.send_notice(context, user_id, notice_text)
+
     @handler.command(command="remove_same_history", block=False, admin=True)
     async def remove_same_history(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE"):
         user = update.effective_user
@@ -81,6 +112,8 @@ class RefreshHistoryJob(Plugin):
         text = "移除相同数据历史记录任务完成\n"
         num1 = await self.history_data_abyss.remove_same_data()
         text += f"防卫战数据移除数量：{num1}\n"
+        num2 = await self.history_data_ledger.remove_same_data()
+        text += f"开拓月历数据移除数量：{num2}\n"
         await reply.edit_text(text)
 
     @handler.command(command="refresh_all_history", block=False, admin=True)
@@ -104,6 +137,8 @@ class RefreshHistoryJob(Plugin):
                     async with self.genshin_helper.genshin(user_id) as client:
                         if await self.save_abyss_data(client):
                             await self.send_abyss_notice(context, user_id, client.player_id)
+                        if await self.save_ledger_data(client):
+                            await self.send_ledger_notice(context, user_id, client.player_id)
                 except (InvalidCookies, PlayerNotFoundError, CookiesNotFoundError):
                     continue
                 except SimnetBadRequest as exc:
