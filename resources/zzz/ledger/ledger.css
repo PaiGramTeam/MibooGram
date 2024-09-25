@@ -22,9 +22,10 @@ body {
 
 .container {
   width: 640px;
-  height: 700px;
-  background-image: url(background/bg.webp);
+  height: 750px;
+  background-image: url(background/loading-bg-m.png);
   background-size: 100% 100%;
+  color: whitesmoke;
   overflow: hidden;
   padding: 20px 50px;
 }
@@ -33,6 +34,17 @@ body {
   display: flex;
   position: relative;
   margin-bottom: 20px;
+}
+.title-box .avatar-container {
+  display: flex;
+}
+.title-box .avatar-container .Avatar {
+  height: 50px;
+  width: 50px;
+}
+.title-box .avatar-container .nickname {
+  margin-left: 20px;
+  font-size: 35px;
 }
 .title-box .info {
   font-size: 28px;
@@ -149,7 +161,7 @@ body {
 }
 .tooltip li em {
   font-size: 20px;
-  color: #28384d;
+  color: burlywood;
   font-style: normal;
   width: 50px;
 }

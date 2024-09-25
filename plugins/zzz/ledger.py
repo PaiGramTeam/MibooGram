@@ -86,6 +86,8 @@ class LedgerPlugin(Plugin):
             "current_boo_pass": format_amount(current_boo_pass),
             "categories": categories,
             "color": color,
+            "nickname": diary_info.role_info.nickname,
+            "avatar": diary_info.role_info.avatar,
         }
         render_result = await self.template_service.render(
             "zzz/ledger/ledger.html", ledger_data, {"width": 640, "height": 610}

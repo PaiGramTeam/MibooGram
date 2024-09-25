@@ -5,16 +5,22 @@
     <link rel="shortcut icon" href="#" />
     <link rel="stylesheet" type="text/css" href="ledger.css" />
     <link rel="preload" href="../../fonts/tttgbnumber.ttf" as="font">
-    <link rel="preload" href="background/bg.webp" as="image">
+    <link rel="preload" href="background/loading-bg-m.png" as="image">
     <link rel="preload" href="background/chart.png" as="image">
   </head>
 
   <body>
     <div class="container" id="container">
       <div class="title-box">
-        <div class="info">
-          <div class="uid">ID：{{uid}}</div>
-          <div class="month">{{day}} 月绳网月报</div>
+        <div>
+          <div class="avatar-container">
+            <img class="Avatar" src="{{ avatar }}" alt="Avatar" />
+            <div class="nickname">{{ nickname }}</div>
+          </div>
+          <div class="info">
+            <div class="uid">ID：{{uid}}</div>
+            <div class="month">{{day}} 月绳网月报</div>
+          </div>
         </div>
       </div>
       <div class="data-box">
@@ -81,11 +87,15 @@
           title: {
             offsetY: -18,
             content: "总计",
+            style: {
+              color: "white",
+            }
           },
           content: {
             offsetY: -10,
             style: {
               fontFamily: "tttgbnumber",
+              color: "white",
             },
           },
         },
