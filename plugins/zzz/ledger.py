@@ -88,7 +88,7 @@ class LedgerPlugin(Plugin):
             "color": color,
         }
         render_result = await self.template_service.render(
-            "zzz/ledger/ledger.html", ledger_data, {"width": 580, "height": 610}
+            "zzz/ledger/ledger.html", ledger_data, {"width": 640, "height": 610}
         )
         return render_result
 
