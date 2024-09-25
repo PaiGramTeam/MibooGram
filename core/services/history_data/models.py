@@ -1,7 +1,7 @@
 import enum
 
 from pydantic import BaseModel
-from simnet.models.starrail.diary import StarRailDiary
+from simnet.models.zzz.diary import ZZZDiary
 from simnet.models.zzz.chronicle.challenge import ZZZChallenge
 
 from gram_core.services.history_data.models import HistoryData
@@ -30,7 +30,7 @@ class HistoryDataAbyss(BaseModel):
 
 
 class HistoryDataLedger(BaseModel):
-    diary_data: StarRailDiary
+    diary_data: ZZZDiary
 
     @classmethod
     def from_data(cls, data: HistoryData) -> "HistoryDataLedger":

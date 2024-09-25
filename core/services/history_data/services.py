@@ -2,7 +2,7 @@ import datetime
 from typing import List
 
 from pytz import timezone
-from simnet.models.starrail.diary import StarRailDiary
+from simnet.models.zzz.diary import ZZZDiary
 from simnet.models.zzz.chronicle.challenge import ZZZChallenge
 
 from core.services.history_data.models import (
@@ -60,7 +60,7 @@ class HistoryDataLedgerServices(BaseService, HistoryDataBaseServices):
     DATA_TYPE = HistoryDataTypeEnum.LEDGER.value
 
     @staticmethod
-    def create(user_id: int, diary_data: StarRailDiary):
+    def create(user_id: int, diary_data: ZZZDiary):
         data = HistoryDataLedger(diary_data=diary_data)
         json_data = data.json(by_alias=True, encoder=json_encoder)
         return HistoryData(
