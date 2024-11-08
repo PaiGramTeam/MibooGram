@@ -75,6 +75,15 @@
           </span>
         </div>
         {% endif %}
+        {% if weekly_task %}
+        <div class="item">
+          <img class="icon" src="./items/Investigation-Point.png" alt="" />
+          <div class="name">丽都周纪</div>
+          <span class="detail {% if weekly_task.cur_point != weekly_task.max_point %}red{% endif %}">
+            {{ weekly_task.cur_point }}/{{ weekly_task.max_point }}
+          </span>
+        </div>
+        {% endif %}
       </div>
     </div>
   </body>
