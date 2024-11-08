@@ -36,8 +36,9 @@ For contributors using WSL2 on Ubuntu 22.04, follow the [detailed guide here](/d
 #### 1. Clone PaiGram from Git
 
 ```bash
-git clone git@github.com:PaiGramTeam/PaiGram.git --recurse-submodules
+git clone git@github.com:PaiGramTeam/PaiGram.git
 cd PaiGram/
+git submodule update --init --recursive
 ```
 
 #### 2. Project Setup
@@ -73,15 +74,15 @@ venv\Scripts\activate.bat
 **Install Dependencies:**
 
 ```bash
-pip install pdm
-pdm install
+pip install uv
+uv sync
 playwright install chromium
 ```
 
 Optional Dependencies
 
 ```bash
-pdm install -G :all
+uv sync --all-extras
 ```
 
 **Edit Config:**
