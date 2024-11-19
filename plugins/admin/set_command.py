@@ -43,6 +43,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("signal_log", "查看调频记录"),
             BotCommand("signal_log_online_view", "调频记录在线浏览"),
             BotCommand("signal_log_rank", "抽卡排行榜"),
+            BotCommand("signal_waiting_list", "未复刻列表"),
             BotCommand("action_log", "查询登录记录"),
             BotCommand("dailynote", "查询实时便笺"),
             BotCommand("redeem", "（国际服）兑换 Key"),

@@ -117,5 +117,10 @@ class PlayerInfoSystem(Plugin):
         await self.set_form_cache(base_info)
         return base_info
 
-    async def get_theme_info(self, player_id: int) -> PlayerAvatarInfo:
+    async def get_theme_info(self, player_id: Optional[int], user_id: Optional[int] = None) -> PlayerAvatarInfo:
+        if not player_id and user_id is not None:
+            player = await self.player_service.get_player(user_id)
+            if player is None:
+                return self.get_base_avatar_info(0, "")
+            player_id = player.player_id
         return await self.get_player_info(player_id, "")
