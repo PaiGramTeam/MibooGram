@@ -7,7 +7,6 @@ from functools import lru_cache, partial
 from typing import Any, List, Optional, Tuple, Union, TYPE_CHECKING
 
 from arkowrapper import ArkoWrapper
-from pytz import timezone
 from simnet.models.zzz.chronicle.challenge import ZZZChallenge
 from telegram import Message, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
@@ -38,7 +37,6 @@ if TYPE_CHECKING:
     from simnet import ZZZClient
 
 
-TZ = timezone("Asia/Shanghai")
 cmd_pattern = r"(?i)^/challenge(?:@[\w]+)?\s*((?:\d+)|(?:all))?\s*(pre)?"
 msg_pattern = r"^防卫战数据((?:查询)|(?:总览))(上期)?\D?(\d*)?.*?$"
 MAX_FLOOR = 7
@@ -214,7 +212,7 @@ class ChallengePlugin(Plugin):
 
         render_data = {
             "floor": floor_data,
-            "floor_time": floor_data.floor_challenge_time.datetime.astimezone(TZ).strftime("%Y-%m-%d %H:%M:%S"),
+            "floor_time": floor_data.floor_challenge_time.datetime.strftime("%Y-%m-%d %H:%M:%S"),
             "floor_nodes": [floor_data.node_1, floor_data.node_2],
             "floor_num": floor,
             "character_icons": character_icons,
@@ -263,8 +261,8 @@ class ChallengePlugin(Plugin):
 
         if not abyss_data.has_data:
             raise AbyssUnlocked()
-        start_time = abyss_data.begin_time.datetime.astimezone(TZ).strftime("%m月%d日 %H:%M")
-        end_time = abyss_data.end_time.datetime.astimezone(TZ).strftime("%m月%d日 %H:%M")
+        start_time = abyss_data.begin_time.datetime.strftime("%m月%d日 %H:%M")
+        end_time = abyss_data.end_time.datetime.strftime("%m月%d日 %H:%M")
         dura = self.from_seconds_to_hours(abyss_data.fast_layer_time)
         max_floor_map = {1: "一", 2: "二", 3: "三", 4: "四", 5: "五", 6: "六", 7: "七"}
         max_floor = f"第{max_floor_map.get(abyss_data.max_layer, abyss_data.max_layer)}防线"
@@ -362,7 +360,7 @@ class ChallengePlugin(Plugin):
     @staticmethod
     def get_season_data_name(data: "HistoryDataAbyss"):
         last_battles = data.abyss_data.floors[0]
-        start_time = last_battles.floor_challenge_time.datetime.astimezone(TZ)
+        start_time = last_battles.floor_challenge_time.datetime
         time = start_time.strftime("%Y.%m.%d")
         name = ""
         if "第" in last_battles.zone_name:
