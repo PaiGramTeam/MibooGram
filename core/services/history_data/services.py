@@ -1,7 +1,6 @@
 import datetime
 from typing import List
 
-from pytz import timezone
 from simnet.models.zzz.diary import ZZZDiary
 from simnet.models.zzz.chronicle.challenge import ZZZChallenge
 
@@ -26,14 +25,6 @@ __all__ = (
     "HistoryDataLedgerServices",
 )
 
-TZ = timezone("Asia/Shanghai")
-
-
-def json_encoder(value):
-    if isinstance(value, datetime.datetime):
-        return value.astimezone(TZ).strftime("%Y-%m-%d %H:%M:%S")
-    return value
-
 
 class HistoryDataAbyssServices(BaseService, HistoryDataBaseServices):
     DATA_TYPE = HistoryDataTypeEnum.ABYSS.value
@@ -46,7 +37,7 @@ class HistoryDataAbyssServices(BaseService, HistoryDataBaseServices):
     @staticmethod
     def create(user_id: int, abyss_data: ZZZChallenge):
         data = HistoryDataAbyss(abyss_data=abyss_data)
-        json_data = data.json(by_alias=True, encoder=json_encoder)
+        json_data = data.model_dump_json(by_alias=True)
         return HistoryData(
             user_id=user_id,
             data_id=abyss_data.season,
@@ -62,7 +53,7 @@ class HistoryDataLedgerServices(BaseService, HistoryDataBaseServices):
     @staticmethod
     def create(user_id: int, diary_data: ZZZDiary):
         data = HistoryDataLedger(diary_data=diary_data)
-        json_data = data.json(by_alias=True, encoder=json_encoder)
+        json_data = data.model_dump_json(by_alias=True)
         return HistoryData(
             user_id=user_id,
             data_id=diary_data.data_id,
