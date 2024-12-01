@@ -3,7 +3,8 @@ from io import BytesIO
 from typing import Optional, TYPE_CHECKING, List, Union, Tuple, Dict
 from urllib.parse import urlencode
 
-from simnet import ZZZClient, Region
+from simnet import ZZZClient, Region, Game
+from simnet.client.routes import GACHA_INFO_URL
 from simnet.models.zzz.wish import ZZZBannerType
 from telegram import (
     InlineKeyboardButton,
@@ -410,7 +411,7 @@ class WishLogPlugin(Plugin.Conversation):
         if not authkey:
             await message.reply_text("生成失败，仅国服且绑定 stoken 的用户才能生成调频记录链接")
         else:
-            url = "https://public-operation-nap.mihoyo.com/common/gacha_record/api/getGachaLog"
+            url = str(GACHA_INFO_URL.get_url(Region.CHINESE, Game.ZZZ) / "getGachaLog")
             params = {
                 "authkey_ver": 1,
                 "lang": "zh-cn",
