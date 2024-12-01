@@ -5,7 +5,13 @@ from urllib.parse import urlencode
 
 from simnet import ZZZClient, Region
 from simnet.models.zzz.wish import ZZZBannerType
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, ReplyKeyboardRemove
+from telegram import (
+    InlineKeyboardButton,
+    InlineKeyboardMarkup,
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove,
+    TelegramObject,
+)
 from telegram.constants import ChatAction
 from telegram.ext import ConversationHandler, filters
 from telegram.helpers import create_deep_linked_url
@@ -51,7 +57,7 @@ if TYPE_CHECKING:
     from gram_core.services.players.models import Player
     from gram_core.services.template.models import RenderResult
 
-INPUT_URL, INPUT_FILE, CONFIRM_DELETE = range(10100, 10103)
+INPUT_URL, INPUT_LAZY, CONFIRM_DELETE = range(10100, 10103)
 WAITING = f"小{config.notice.bot_name}正在从服务器获取数据，请稍后"
 WISHLOG_NOT_FOUND = f"{config.notice.bot_name}没有找到你的调频记录，快来私聊{config.notice.bot_name}导入吧~"
 WISHLOG_WEB = """<b>调频记录详细信息查询</b>
@@ -59,6 +65,15 @@ WISHLOG_WEB = """<b>调频记录详细信息查询</b>
 已为您创建一枚令牌，点击下方按钮可直接进行查询。
 
 有效期为 1 小时，过期需重新申请。如怀疑泄漏请立即重新申请。"""
+
+
+class WishLogPluginData(TelegramObject):
+    player_id: int = 0
+    authkey: str = ""
+
+    def reset_data(self):
+        self.player_id = 0
+        self.authkey = ""
 
 
 class WishLogPlugin(Plugin.Conversation):
@@ -98,7 +113,13 @@ class WishLogPlugin(Plugin.Conversation):
         return player.player_id
 
     async def _refresh_user_data(
-        self, user: "User", player_id: int, data: dict = None, authkey: str = None, verify_uid: bool = True
+        self,
+        user: "User",
+        player_id: int,
+        data: dict = None,
+        authkey: str = None,
+        verify_uid: bool = True,
+        is_lazy: bool = True,
     ) -> str:
         """刷新用户数据
         :param user: 用户
@@ -109,7 +130,7 @@ class WishLogPlugin(Plugin.Conversation):
         try:
             logger.debug("尝试获取已绑定的绝区零账号")
             if authkey:
-                new_num = await self.gacha_log.get_gacha_log_data(user.id, player_id, authkey)
+                new_num = await self.gacha_log.get_gacha_log_data(user.id, player_id, authkey, is_lazy)
                 return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条调频记录"
             if data:
                 new_num = await self.gacha_log.import_gacha_log_data(user.id, player_id, data, verify_uid)
@@ -207,7 +228,13 @@ class WishLogPlugin(Plugin.Conversation):
         message = update.effective_message
         user = update.effective_user
         player_id = await self.get_player_id(user.id, uid, offset)
-        context.chat_data["uid"] = player_id
+        wish_log_plugin_data: WishLogPluginData = context.chat_data.get("wish_log_plugin_data")
+        if wish_log_plugin_data is None:
+            wish_log_plugin_data = WishLogPluginData()
+            context.chat_data["wish_log_plugin_data"] = wish_log_plugin_data
+        else:
+            wish_log_plugin_data.reset_data()
+        wish_log_plugin_data.player_id = player_id
         logger.info("用户 %s[%s] 导入调频记录命令请求", user.full_name, user.id)
         keyboard = None
         if await self.can_gen_authkey(user.id, player_id):
@@ -220,8 +247,10 @@ class WishLogPlugin(Plugin.Conversation):
     async def import_data_from_message(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
-        player_id = context.chat_data["uid"]
+        wish_log_plugin_data: WishLogPluginData = context.chat_data.get("wish_log_plugin_data")
+        player_id = wish_log_plugin_data.player_id
         if message.document:
+            logger.info("用户 %s[%s] 从文件导入调频记录", user.full_name, user.id)
             await self.import_from_file(user, player_id, message)
             return ConversationHandler.END
         if not message.text:
@@ -239,9 +268,29 @@ class WishLogPlugin(Plugin.Conversation):
             return ConversationHandler.END
         else:
             authkey = from_url_get_authkey(message.text)
+        wish_log_plugin_data.authkey = authkey
+        keyboard = ReplyKeyboardMarkup([["快速导入（推荐）"], ["全量刷新"], ["退出"]], one_time_keyboard=True)
+        await message.reply_text("请选择导入方式", parse_mode="html", reply_markup=keyboard)
+        return INPUT_LAZY
+
+    @conversation.state(state=INPUT_LAZY)
+    @handler.message(filters=~filters.COMMAND, block=False)
+    async def get_lazy_from_message(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+        message = update.effective_message
+        user = update.effective_user
+        wish_log_plugin_data: WishLogPluginData = context.chat_data.get("wish_log_plugin_data")
+        player_id = wish_log_plugin_data.player_id
+        authkey = wish_log_plugin_data.authkey
+        is_lazy = True
+        if message.text == "全量刷新":
+            is_lazy = False
+        elif message.text == "退出":
+            await message.reply_text("取消导入调频记录", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        logger.info("用户 %s[%s] 从 authkey 导入调频记录 is_lazy[%s]", user.full_name, user.id, is_lazy)
         reply = await message.reply_text(WAITING, reply_markup=ReplyKeyboardRemove())
         await message.reply_chat_action(ChatAction.TYPING)
-        text = await self._refresh_user_data(user, player_id, authkey=authkey)
+        text = await self._refresh_user_data(user, player_id, authkey=authkey, is_lazy=is_lazy)
         self.add_delete_message_job(reply, delay=1)
         await message.reply_text(text, reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
@@ -253,10 +302,16 @@ class WishLogPlugin(Plugin.Conversation):
         uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         user = update.effective_user
+        wish_log_plugin_data: WishLogPluginData = context.chat_data.get("wish_log_plugin_data")
+        if wish_log_plugin_data is None:
+            wish_log_plugin_data = WishLogPluginData()
+            context.chat_data["wish_log_plugin_data"] = wish_log_plugin_data
+        else:
+            wish_log_plugin_data.reset_data()
         logger.info("用户 %s[%s] 删除调频记录命令请求", user.full_name, user.id)
         try:
             player_id = await self.get_player_id(user.id, uid, offset)
-            context.chat_data["uid"] = player_id
+            wish_log_plugin_data.player_id = player_id
         except PlayerNotFoundError:
             logger.info("未查询到用户 %s[%s] 所绑定的账号信息", user.full_name, user.id)
             await message.reply_text(config.notice.user_not_found)
@@ -275,8 +330,9 @@ class WishLogPlugin(Plugin.Conversation):
     async def command_confirm_delete(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
         user = update.effective_user
+        wish_log_plugin_data: WishLogPluginData = context.chat_data.get("wish_log_plugin_data")
         if message.text == "确定":
-            status = await self.gacha_log.remove_history_info(str(user.id), str(context.chat_data["uid"]))
+            status = await self.gacha_log.remove_history_info(str(user.id), str(wish_log_plugin_data.player_id))
             await message.reply_text("调频记录已删除" if status else "调频记录删除失败")
             return ConversationHandler.END
         await message.reply_text("已取消")
@@ -343,16 +399,16 @@ class WishLogPlugin(Plugin.Conversation):
 
     @handler.command(command="signal_log_url", filters=filters.ChatType.PRIVATE, block=False)
     @handler.command(command="gacha_log_url", filters=filters.ChatType.PRIVATE, block=False)
-    @handler.message(filters=filters.Regex("^抽卡记录链接(.*)") & filters.ChatType.PRIVATE, block=False)
+    @handler.message(filters=filters.Regex("^调频记录链接(.*)") & filters.ChatType.PRIVATE, block=False)
     async def command_start_url(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> None:
         uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         user = update.effective_user
         player_id = await self.get_player_id(user.id, uid, offset)
-        logger.info("用户 %s[%s] 生成抽卡记录链接命令请求 player_id[%s]", user.full_name, user.id, player_id)
+        logger.info("用户 %s[%s] 生成调频记录链接命令请求 player_id[%s]", user.full_name, user.id, player_id)
         authkey = await self.gen_authkey(user.id, player_id)
         if not authkey:
-            await message.reply_text("生成失败，仅国服且绑定 stoken 的用户才能生成抽卡记录链接")
+            await message.reply_text("生成失败，仅国服且绑定 stoken 的用户才能生成调频记录链接")
         else:
             url = "https://public-operation-nap.mihoyo.com/common/gacha_record/api/getGachaLog"
             params = {
@@ -630,7 +686,7 @@ class WishLogPlugin(Plugin.Conversation):
         user = update.effective_user
         logger.info("用户 %s[%s] signal_log_rank_recount 命令请求", user.full_name, user.id)
         message = update.effective_message
-        reply = await message.reply_text("正在重新统计抽卡记录排行榜")
+        reply = await message.reply_text("正在重新统计调频记录排行榜")
         await self.gacha_log.recount_all_data(reply)
         await reply.edit_text("重新统计完成")
 

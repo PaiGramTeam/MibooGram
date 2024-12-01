@@ -62,7 +62,7 @@ class PayLog:
         :param user_id: 用户id
         :param uid: 原神uid
         :param only_status: 是否只读取状态
-        :return: 抽卡记录数据
+        :return: 调频记录数据
         """
         file_path = self.get_file_path(user_id, uid)
         if only_status:
