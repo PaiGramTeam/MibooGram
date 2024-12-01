@@ -1,13 +1,13 @@
 import datetime
 from enum import Enum
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Union, Optional
 
 from pydantic import field_validator
 
 from simnet.models.base import APIModel as BaseModel, DateTimeField, add_timezone
 
 from metadata.shortname import not_real_roles, roleToId, weaponToId, buddyToId
-from modules.gacha_log.const import ZZZGF_VERSION
+from modules.gacha_log.const import UIGF_VERSION
 
 
 class ImportType(Enum):
@@ -148,27 +148,25 @@ class ZZZGFGachaType(Enum):
     BANGBOO = "5"
 
 
-class ZZZGFItem(BaseModel):
+class UIGFItem(BaseModel):
     id: str
     name: str
     count: str = "1"
-    gacha_id: str = ""
     gacha_type: ZZZGFGachaType
     item_id: str = ""
     item_type: ItemType
     rank_type: str
     time: str
+    uigf_gacha_type: ZZZGFGachaType
+    gacha_id: Optional[str] = ""
 
 
-class ZZZGFInfo(BaseModel):
-    uid: str = "0"
-    lang: str = "zh-cn"
-    region_time_zone: int = 8
+class UIGFInfo(BaseModel):
     export_time: str = ""
     export_timestamp: int = 0
     export_app: str = ""
     export_app_version: str = ""
-    zzzgf_version: str = ZZZGF_VERSION
+    version: str = UIGF_VERSION
 
     def __init__(self, **data: Any):
         super().__init__(**data)
@@ -177,6 +175,15 @@ class ZZZGFInfo(BaseModel):
             self.export_timestamp = int(datetime.datetime.now().timestamp())
 
 
-class ZZZGFModel(BaseModel):
-    info: ZZZGFInfo
-    list: List[ZZZGFItem]
+class UIGFListInfo(BaseModel):
+    uid: int = 0
+    timezone: int = 8
+    lang: str = "zh-cn"
+    list: List[UIGFItem]
+
+
+class UIGFModel(BaseModel):
+    info: UIGFInfo
+    hk4e: List[UIGFListInfo]
+    hkrpg: List[UIGFListInfo]
+    nap: List[UIGFListInfo]
