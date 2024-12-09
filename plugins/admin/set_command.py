@@ -53,6 +53,8 @@ class SetCommandPlugin(Plugin):
             BotCommand("player_card", "角色卡片"),
             BotCommand("agent_detail", "角色详细信息"),
             BotCommand("sign", "米游社绝区零每日签到"),
+            BotCommand("cloud_game_sign", "（国服）云游戏每日签到"),
+            BotCommand("cloud_game_wallet", "（国服）云游戏钱包查询"),
             # Wiki 类
             BotCommand("weapon", "查看音擎图鉴"),
             BotCommand("avatar", "查询角色攻略"),
