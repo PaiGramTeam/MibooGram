@@ -1,59 +1,31 @@
-<!DOCTYPE html>
-<html lang="zh-cn">
-<head>
-    <meta charset="UTF-8">
-    <title>floor</title>
-    <link type="text/css" href="./style.css" rel="stylesheet"/>
-    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-        }
-
-        .floors, .floor {
-            border-radius: unset;
-            margin: 0;
-        }
-
-        .floor-num > div:last-child {
-            display: flex;
-            flex-flow: column;
-            justify-content: center;
-            align-content: center;
-        }
-    </style>
-</head>
-<body>
-<div class="container">
-    <div class="floors">
+ <div class="floors">
         <div class="floor floor-abyss">
             <div class="head">
                 <div class="floor-name">
-                    <div class="floor-num"></div>
+                    <div class="floor_num"></div>
                     <div>
                         <div>UID: {{ uid }}</div>
-                        <div>{{ title }}•{{ floor.zone_name }}</div>
+                        <div>{{ title }}•{{ data.floor.zone_name }}</div>
                     </div>
                 </div>
-                <div class="star star{{ floor.rating }}"></div>
+                <div class="star star{{ data.floor.rating }}"></div>
             </div>
             <div class="hr"></div>
             <div class="chamber">
                 <div class="chamber-info">
                     <div>
-                        <span style="color: white;">{{ floor_time }}</span>
+                        <span style="color: white;">{{ data.floor_time }}</span>
                     </div>
                 </div>
                 <div class="battles">
-                    {% for node in floor_nodes %}
+                    {% for node in data.floor_nodes %}
                     <div class="battle">
                         {% for character in node.avatars %}
                             <div class="character">
                                 <div class="element" style="background-image: url('../../img/attribute/{{ character.element_type }}.png')"></div>
                                 <div class="icon"
                                      style="background-image: url('../../background/rarity/half/{{ character.rarity }}.png')">
-                                    <img src="{{ character_icons[character.id] }}" alt=""/>
+                                    <img src="{{ data.character_icons[character.id] }}" alt=""/>
                                 </div>
                                 <div class="caption">Lv.{{ character.level }}</div>
                             </div>
@@ -63,7 +35,7 @@
                             <div class="character">
                                 <div class="icon"
                                      style="background-image: url('../../background/rarity/half/{{ character.rarity }}.png')">
-                                    <img src="{{ buddy_icons[character.id] }}" alt=""/>
+                                    <img src="{{ data.buddy_icons[character.id] }}" alt=""/>
                                 </div>
                                 <div class="caption">Lv.{{ character.level }}</div>
                             </div>
@@ -76,7 +48,4 @@
                 </div>
             </div>
         </div>
-    </div>
-</div>
-</body>
-</html>
+ </div>

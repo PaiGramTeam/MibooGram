@@ -42,6 +42,15 @@
             </div>
         </div>
     </div>
+        {% for data in floors %}
+        {% if loop.index % 4 == 1 %}
+            <div class="floors_row">
+        {% endif %}
+        {% include "zzz/abyss/floor.jinja2" %}
+        {% if loop.index % 4 == 0 or loop.index == loop.length %}
+            </div>
+        {% endif %}
+        {% endfor %}
 </div>
 </body>
 </html>
