@@ -26,6 +26,15 @@ DATA_MAP = {
 }
 
 
+def choose_path_by_url(url: str, png_path: Path, webp_path: Path) -> Path:
+    ext = url.split(".")[-1].lower()
+    if ext == "png":
+        return png_path
+    if ext == "webp":
+        return webp_path
+    return png_path
+
+
 class AssetsServiceError(Exception):
     pass
 
@@ -88,18 +97,15 @@ class _AvatarAssets(_AssetsService):
         for icon in self.data:
             base_path = self.path / f"{icon.id}"
             base_path.mkdir(exist_ok=True, parents=True)
-            gacha_path = base_path / "gacha.png"
-            icon_path = base_path / "icon.png"
-            square_path = base_path / "square.png"
-            normal_path = base_path / "normal.png"
-            if not gacha_path.exists():
-                tasks.append(self._download(icon.gacha, gacha_path))
-            if not icon_path.exists():
-                tasks.append(self._download(icon.icon_, icon_path))
-            if not square_path.exists():
-                tasks.append(self._download(icon.square, square_path))
-            if not normal_path.exists():
-                tasks.append(self._download(icon.normal, normal_path))
+
+            def _get_path(name: str) -> tuple[Path, Path]:
+                path = base_path / f"{name}.png"
+                return path, path.with_suffix(".webp")
+
+            for i in (("gacha", icon.gacha), ("icon", icon.icon_), ("square", icon.square), ("normal", icon.normal)):
+                png_path, webp_path = _get_path(i[0])
+                if not png_path.exists() and not webp_path.exists() and i[1]:
+                    tasks.append(self._download(i[1], choose_path_by_url(i[1], png_path, webp_path)))
 
             if len(tasks) >= 100:
                 await asyncio.gather(*tasks)
@@ -108,10 +114,16 @@ class _AvatarAssets(_AssetsService):
             await asyncio.gather(*tasks)
         logger.info("角色素材图标初始化完成")
 
-    def get_path(self, icon: Avatar, name: str, ext: str = "png") -> Path:
+    def get_path(self, icon: Avatar, name: str) -> Path:
         path = self.path / f"{icon.id}"
         path.mkdir(exist_ok=True, parents=True)
-        return path / f"{name}.{ext}"
+        p1 = path / f"{name}.png"
+        if p1.exists():
+            return p1
+        p2 = path / f"{name}.webp"
+        if p2.exists():
+            return p2
+        return p1
 
     def get_by_id(self, id_: int) -> Optional[Avatar]:
         return self.id_map.get(id_, None)
