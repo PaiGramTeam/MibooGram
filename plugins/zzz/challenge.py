@@ -178,7 +178,7 @@ class ChallengePlugin(Plugin):
             for ch in floor_data.node_1.avatars + floor_data.node_2.avatars
         }
         buddy_icons = {
-            bu.id: self.assets_service.buddy.square(bu.id).as_uri()
+            bu.id: self.assets_service.buddy.icon(bu.id).as_uri()
             for bu in [floor_data.node_1.buddy, floor_data.node_2.buddy]
             if bu
         }
@@ -266,7 +266,7 @@ class ChallengePlugin(Plugin):
         return await self.template_service.render(
             "zzz/abyss/overview.html",
             render_data,
-            viewport={"width": 2745, "height": 4000},
+            viewport={"width": 1893, "height": 4000},
             query_selector=".container",
         )
 
