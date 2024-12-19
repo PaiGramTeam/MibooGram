@@ -140,7 +140,7 @@ class AvatarListPlugin(Plugin):
                     level=character.level,
                     eidolon=character.rank,
                     rarity=self.fix_rarity(character.rarity),
-                    icon=self.assets_service.avatar.icon(character.id, character.name).as_uri(),
+                    icon=self.assets_service.avatar.square(character.id, character.name).as_uri(),
                     skills=self.get_skill_data(detail),
                     equipment=equip,
                 )
