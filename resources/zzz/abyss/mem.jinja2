@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-ch">
+<head>
+    <meta charset="UTF-8">
+    <title>overview</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .overview {
+            padding: 20px 80px;
+            border-radius: unset;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% set overview_class = 'overview-mem' %}
+    <div class="overview {{ overview_class }}">
+        <div class="title">{{ title }}挑战回顾</div>
+        <div class="summarize">
+            <div>
+                <div>UID: {{ uid }}</div>
+                <div>
+                    <img style="height: 40px" src="{{ abyss_data.avatar_icon }}" alt=""/>
+                    {{ abyss_data.nick_name }}
+                </div>
+            </div>
+            <div>
+                <div>本期开始: {{ start_time }}</div>
+                <div>本期结束: {{ end_time }}</div>
+            </div>
+            <div>
+                <div>
+                    <span>总分：{{ scores }}</span>
+                    <span style="color: yellowgreen"> ~ {{ abyss_data.rank_percent / 100.0 }} %</span>
+                </div>
+                <div class="star">
+                    <div class="icon icon2 starL"></div>
+                    <span>*{{ stars }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+        {% for data in floors %}
+        {% include "zzz/abyss/floor_mem.jinja2" %}
+        {% endfor %}
+</div>
+</body>
+</html>

@@ -57,6 +57,10 @@ body {
     background-image: linear-gradient(to top, rgb(0 0 0 / 10%), rgb(0 0 0 / 10%)), url("./background/abyss-bg-grad.png");
 }
 
+.overview-mem {
+    background-image: linear-gradient(to top, rgb(0 0 0 / 10%), rgb(0 0 0 / 10%)), url("./background/page-bg-pc.png");
+}
+
 .summarize {
     font-size: 30px;
     width: calc(100% - 90px);
@@ -116,6 +120,10 @@ body {
 
 .star1B, .starB::before {
     background-image: url("../../img/rarity/B.png");
+}
+
+.starL, .starL::before {
+    background-image: url("background/star-icon.png");
 }
 
 .star > span {
@@ -276,6 +284,10 @@ body {
 
 .floor-abyss {
     background-image: url('./background/abyss-bg-grad.png');
+}
+
+.floor-mem {
+    background: #222a3b;
 }
 
 .head {
