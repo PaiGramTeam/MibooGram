@@ -194,7 +194,7 @@ class ChallengeMemPlugin(Plugin):
             bytes格式的图片
         """
 
-        if not abyss_data.has_data:
+        if not abyss_data.has_data or not abyss_data.list:
             raise AbyssUnlocked()
         start_time = abyss_data.begin_time.datetime.strftime("%m月%d日 %H:%M")
         end_time = abyss_data.end_time.datetime.strftime("%m月%d日 %H:%M")
