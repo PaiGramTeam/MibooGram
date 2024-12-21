@@ -180,7 +180,6 @@ class AgentDetailPlugin(Plugin):
                 break
         return "#" + " #".join(tags)
 
-    @handler.command(command="agent_detail", block=False)
     @handler.message(filters=filters.Regex("^角色详细信息查询(.*)"), block=False)
     async def command_start(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)

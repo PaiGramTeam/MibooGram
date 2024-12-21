@@ -68,6 +68,7 @@ class PlayerCards(Plugin):
         return "#" + " #".join(tags)
 
     @handler.command(command="player_card", player=True, block=False)
+    @handler.command(command="agent_detail", player=True, block=False)
     @handler.message(filters=filters.Regex("^角色卡片查询(.*)"), player=True, block=False)
     async def player_cards(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> None:
         user_id = await self.get_real_user_id(update)
