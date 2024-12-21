@@ -29,6 +29,13 @@
                     <div class="battle">
                         {% for character in data.floor.avatar_list %}
                             <div class="character">
+                                {% if character.rank > 0 %}
+                                    {% set constellation = character.rank %}
+                                    {% set bg = ['blue', 'blue', 'green', 'green', 'red', 'red'][constellation - 1] %}
+                                    <div style="background-color: var(--{{ bg }})">
+                                        {{ constellation }} 命
+                                    </div>
+                                {% endif %}
                                 <div class="element" style="background-image: url('../../img/attribute/{{ character.element_type }}.png')"></div>
                                 <div class="icon"
                                      style="background-image: url('../../background/rarity/half/{{ character.rarity }}.png')">
