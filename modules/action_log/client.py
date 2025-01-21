@@ -32,15 +32,16 @@ class ActionLogAnalyse(DateUtils):
 
     @staticmethod
     def init_pair(data: List[ZZZSelfHelpActionLog]) -> List[ActionLogPair]:
+        # 确保第一个数据为登入，最后一条数据为登出
         pairs = []
         start = None
-        for d in data:
-            if start:
-                if d.reason == ZZZSelfHelpActionLogReason.LOG_OUT:
-                    pairs.append(ActionLogPair(start=start, end=d))
-                    start = None
-            elif d.reason == ZZZSelfHelpActionLogReason.LOG_IN:
-                start = d
+        for i in data:
+            if i.status == 1 and not start:
+                start = i
+            elif i.status == 0 and start:
+                end = i
+                pairs.append(ActionLogPair(start=start, end=end))
+                start = None
         return pairs
 
     def get_this_week_duration(self) -> int:
