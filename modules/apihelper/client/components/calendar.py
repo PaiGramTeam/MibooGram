@@ -20,15 +20,15 @@ class Calendar:
     """原神活动日历"""
 
     ANNOUNCEMENT_LIST = "https://hk4e-api.mihoyo.com/common/hk4e_cn/announcement/api/getAnnList"
-    ANNOUNCEMENT_CONTENT = "https://hk4e-api.mihoyo.com/common/hk4e_cn/announcement/api/getAnnContent"
+    ANNOUNCEMENT_CONTENT = "https://announcement-static.mihoyo.com/common/nap_cn/announcement/api/getAnnContent"
     ANNOUNCEMENT_PARAMS = {
-        "game": "hk4e",
-        "game_biz": "hk4e_cn",
+        "game": "nap",
+        "game_biz": "nap_cn",
         "lang": "zh-cn",
-        "bundle_id": "hk4e_cn",
+        "bundle_id": "nap_cn",
         "platform": "pc",
-        "region": "cn_gf01",
-        "level": "55",
+        "region": "prod_gf_cn",
+        "level": "60",
         "uid": "100000000",
     }
     MIAO_API = "http://miaoapi.cn/api/calendar"
@@ -402,3 +402,19 @@ class Calendar:
             "birthday_char_line": birthday_char_line,
             "birthday_chars": birthday_chars,
         }
+
+    async def get_calendar_url(self) -> Optional[str]:
+        url = None
+        req = await self.client.get(self.ANNOUNCEMENT_CONTENT, params=self.ANNOUNCEMENT_PARAMS)
+        if req.status_code != 200:
+            return url
+        detail_data = req.json()
+        for data in detail_data.get("data", {}).get("list", []):
+            sub_title = data.get("subtitle")
+            if sub_title != "活动日历":
+                continue
+            img_reg = r'<img.*?src="(.*?)".*?>'
+            if reg_ret := re.search(img_reg, data.get("content", "")):
+                url = reg_ret[1]
+                break
+        return url
