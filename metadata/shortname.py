@@ -36,7 +36,7 @@ roles = {
     1311: ["耀嘉音", "Astra Yao", "astrayao", "yaojiayin"],
     1321: ["伊芙琳", "Evelyn", "evelyn"],
 }
-not_real_roles = [2011, 2021, 1321]
+not_real_roles = [2011, 2021]
 weapons = {
     12001: ["「月相」-望"],
     12002: ["「月相」-晦"],
