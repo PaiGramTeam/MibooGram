@@ -54,7 +54,7 @@ class GachaLogUigfConverter:
                         gacha_type=item.gacha_type,
                         item_id=item.item_id,
                         item_type=item.item_type,
-                        rank_type=item.rank_type,
+                        rank_type=str(int(item.rank_type) - 1),
                         time=item.time.strftime("%Y-%m-%d %H:%M:%S"),
                         uigf_gacha_type=item.gacha_type,
                     )

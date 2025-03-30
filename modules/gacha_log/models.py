@@ -74,6 +74,15 @@ class GachaItem(BaseModel):
         return rank
 
 
+class GachaItemImport(GachaItem):
+    @field_validator("rank_type")
+    @classmethod
+    def check_rank_type(cls, rank):
+        if rank not in {"4", "3", "2"}:
+            raise ValueError(f"error rank type {rank}")
+        return str(int(rank) + 1)
+
+
 class GachaLogInfo(BaseModel):
     user_id: str
     uid: str

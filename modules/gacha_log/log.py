@@ -32,6 +32,7 @@ from modules.gacha_log.models import (
     GachaLogInfo,
     ImportType,
     Pool,
+    GachaItemImport,
 )
 from modules.gacha_log.online_view import GachaLogOnlineView
 from modules.gacha_log.ranks import GachaLogRanks
@@ -193,7 +194,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
             except ValueError:
                 import_type = ImportType.UNKNOWN
             # 检查导入数据是否合法
-            all_items = [GachaItem(**i) for i in _data["list"]]
+            all_items = [GachaItemImport(**i) for i in _data["list"]]
             await self.verify_data(all_items)
             gacha_log, status = await self.load_history_info(str(user_id), uid)
             # 将唯一 id 放入临时数据中，加快查找速度
