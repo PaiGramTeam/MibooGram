@@ -41,7 +41,7 @@ roles = {
     1361: ["「扳机」", "Trigger", "trigger"],
     1381: ["零号·安比", "Soldier 0 - Anby"],
 }
-not_real_roles = [2011, 2021, 1291]
+not_real_roles = [2011, 2021]
 weapons = {
     12001: ["「月相」-望"],
     12002: ["「月相」-晦"],
