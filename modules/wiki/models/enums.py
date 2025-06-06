@@ -31,6 +31,8 @@ class ZZZSpeciality(IntEnum):
     """ 支援 """
     DEFENSE = 5
     """ 防护 """
+    RUPTURE = 6
+    """ 命破 """
 
 
 class ZZZRank(str, Enum):
