@@ -46,7 +46,7 @@ roles = {
     1411: ["柚叶", "Yuzuha", "yuzuha"],
     1421: ["潘引壶", "Pan Yinhu", "pan yinhu"],
 }
-not_real_roles = [2011, 2021, 1401]
+not_real_roles = [2011, 2021]
 weapons = {
     12001: ["「月相」-望"],
     12002: ["「月相」-晦"],
