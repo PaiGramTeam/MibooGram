@@ -60,9 +60,9 @@ class WarpData(BaseModel):
         print("{")
         print(f'    "five": {self.five},')
         print(f'    "four": {self.four},')
+        print(f'    "name": "{name}",')
         print(f'    "from": "{from_time}",')
         print(f'    "to": "{to_time}",')
-        print(f'    "name": "{name}",')
         print("}")
 
 
