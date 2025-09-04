@@ -191,7 +191,7 @@ def idToRole(aid: int) -> str | None:
 def weaponToName(shortname: str) -> str:
     """将武器昵称转为正式名"""
     shortname = str.casefold(shortname)  # 忽略大小写
-    return next((value[0] for value in weapons.values() for name in value if name == shortname), shortname)
+    return next((value[0] for value in weapons.values() for name in value if name.lower() == shortname), shortname)
 
 
 # noinspection PyPep8Naming
@@ -199,7 +199,7 @@ def weaponToName(shortname: str) -> str:
 def weaponToId(name: str) -> int | None:
     """获取武器ID"""
     new_name = str.casefold(name)
-    f1 = next((key for key, value in weapons.items() for n in value if n == new_name), None)
+    f1 = next((key for key, value in weapons.items() for n in value if n.lower() == new_name), None)
     return f1 or next((key for key, value in weapons.items() for n in value if n == name), None)
 
 
