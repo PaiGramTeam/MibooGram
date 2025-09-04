@@ -17,6 +17,7 @@ from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from gram_core.services.template.services import TemplateService
 
 from metadata.pool.pool import POOL_2 as CHARACTER_POOL, POOL_3 as WEAPON_POOL
+from metadata.shortname import roleToName, weaponToName
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 
@@ -115,6 +116,7 @@ class WishWaitingListPlugin(Plugin):
             last_up_day = max(math.ceil((now - last_up_time).total_seconds() / 86400), 0)
             for i, times in [(fives, five_times), (fours, four_times)]:
                 for n in i:
+                    n = roleToName(n) if pool_type == "avatar" else weaponToName(n)
                     if n in ignore:
                         continue
                     if n in times:
