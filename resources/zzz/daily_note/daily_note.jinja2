@@ -36,13 +36,6 @@
       </div>
       <div class="list">
         <div class="item">
-          <img class="icon" src="./items/IconCoin.webp" alt="" />
-          <div class="name">录像店经营</div>
-          <div class="detail {% if exp_status == 'DONE' %}red{% endif %}">
-            {% if exp_status == 'DONE' %} 已完成 {% else %} 正在营业 {% endif %}
-          </div>
-        </div>
-        <div class="item">
           <img class="icon" src="./items/Inter-Knot-Credit.png" alt="" />
           <div class="name">每日活跃</div>
           <span
@@ -57,6 +50,13 @@
             {% if card_sign_status %} 已完成 {% else %} 未完成 {% endif %}
           </span>
         </div>
+        <div class="item">
+          <img class="icon" src="./items/IconCoin.webp" alt="" />
+          <div class="name">录像店经营</div>
+          <div class="detail {% if exp_status == 'DONE' %}red{% endif %}">
+            {% if exp_status == 'DONE' %} 已完成 {% else %} 正在营业 {% endif %}
+          </div>
+        </div>
         {% if bounty_commission %}
         <div class="item">
           <img class="icon" src="./items/ChallengeShopCoin.webp" alt="" />
@@ -66,21 +66,21 @@
           </span>
         </div>
         {% endif %}
-        {% if survey_points %}
-        <div class="item">
-          <img class="icon" src="./items/Investigation-Point.png" alt="" />
-          <div class="name">调查点数</div>
-          <span class="detail {% if survey_points.num != survey_points.total %}red{% endif %}">
-            {{ survey_points.num }}/{{ survey_points.total }}
-          </span>
-        </div>
-        {% endif %}
         {% if weekly_task %}
         <div class="item">
           <img class="icon" src="./items/Investigation-Point.png" alt="" />
           <div class="name">丽都周纪</div>
           <span class="detail {% if weekly_task.cur_point != weekly_task.max_point %}red{% endif %}">
             {{ weekly_task.cur_point }}/{{ weekly_task.max_point }}
+          </span>
+        </div>
+        {% endif %}
+        {% if temple_running %}
+        <div class="item">
+          <img class="icon" src="./items/SuibianPawnCoin.webp" alt="" />
+          <div class="name">百通宝</div>
+          <span class="detail {% if temple_running.current_currency != temple_running.weekly_currency_max %}red{% endif %}">
+            {{ temple_running.current_currency }}/{{ temple_running.weekly_currency_max }}
           </span>
         </div>
         {% endif %}
