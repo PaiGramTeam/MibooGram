@@ -39,6 +39,31 @@
             <div class="text">邦布劵：{{ current_boo_pass }}</div>
           </div>
         </div>
+          {% if gacha_info %}
+        <div class="day">
+          <div class="head">当前背包：</div>
+          <div class="primogems">
+            <div class="icon icon-dp"></div>
+            <div class="text">菲林底片：{{ gacha_info.recharge_monochrome_cnt }}</div>
+          </div>
+          <div class="primogems">
+            <div class="icon icon-xq"></div>
+            <div class="text">菲林：{{ gacha_info_polychrome_cnt }} | {{ gacha_info_gacha }} 抽</div>
+          </div>
+          <div class="primogems">
+            <div class="icon icon-jmmd"></div>
+            <div class="text">加密母带：{{ gacha_info.encrypted_master_tape_cnt }}</div>
+          </div>
+          <div class="primogems">
+            <div class="icon icon-yzmd"></div>
+            <div class="text">原装母带：{{ gacha_info.master_tape_cnt }}</div>
+          </div>
+          <div class="primogems">
+            <div class="icon icon-boo"></div>
+            <div class="text">邦布劵：{{ gacha_info.boopon_cnt }}</div>
+          </div>
+        </div>
+            {% endif %}
       </div>
       <div class="chart-box">
         <div class="head">菲林收入组成：</div>

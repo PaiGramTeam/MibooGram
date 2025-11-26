@@ -25,6 +25,7 @@ from utils.uid import mask_number
 
 if TYPE_CHECKING:
     from simnet import ZZZClient
+    from simnet.models.zzz.chronicle.gacha_detail import ZZZGachaDetail
     from simnet.models.zzz.diary import ZZZDiary
 
 
@@ -53,10 +54,13 @@ class LedgerPlugin(Plugin):
     async def _start_get_ledger(self, client: "ZZZClient", year, month) -> RenderResult:
         req_month = f"{year}0{month}" if month < 10 else f"{year}{month}"
         diary_info = await client.get_zzz_diary(client.player_id, month=req_month)
+        gacha_info = await client.get_zzz_cur_gacha_detail(client.player_id)
         await self.save_ledger_data(self.history_data_ledger, client.player_id, diary_info)
-        return await self._start_get_ledger_render(client.player_id, diary_info)
+        return await self._start_get_ledger_render(client.player_id, diary_info, gacha_info)
 
-    async def _start_get_ledger_render(self, uid: int, diary_info: "ZZZDiary") -> RenderResult:
+    async def _start_get_ledger_render(
+        self, uid: int, diary_info: "ZZZDiary", gacha_info: Optional["ZZZGachaDetail"] = None
+    ) -> RenderResult:
         color = ["#73a9c6", "#d56565", "#70b2b4", "#bd9a5a", "#739970", "#7a6da7", "#597ea0"]
         categories = [
             {
@@ -84,13 +88,16 @@ class LedgerPlugin(Plugin):
             "gacha": int(current_hcoin / 160),
             "current_rails_pass": format_amount(current_rails_pass),
             "current_boo_pass": format_amount(current_boo_pass),
+            "gacha_info": gacha_info,
+            "gacha_info_polychrome_cnt": format_amount(gacha_info.polychrome_cnt) if gacha_info else "N/A",
+            "gacha_info_gacha": int(gacha_info.polychrome_cnt / 160) if gacha_info else "N/A",
             "categories": categories,
             "color": color,
             "nickname": diary_info.role_info.nickname,
             "avatar": diary_info.role_info.avatar,
         }
         render_result = await self.template_service.render(
-            "zzz/ledger/ledger.html", ledger_data, {"width": 640, "height": 610}
+            "zzz/ledger/ledger.html", ledger_data, {"width": 640, "height": 710 if gacha_info else 610}
         )
         return render_result
 

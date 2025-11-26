@@ -22,7 +22,7 @@ body {
 
 .container {
   width: 640px;
-  height: 750px;
+  height: 850px;
   background-image: url(background/loading-bg-m.png);
   background-size: 100% 100%;
   color: whitesmoke;
@@ -107,6 +107,15 @@ body {
 }
 .primogems .icon-boo {
   background: url("background/icon-bangboo-large.png") no-repeat 50% / cover;;
+}
+.primogems .icon-dp {
+  background: url("background/IconCurrency02.webp") no-repeat 50% / cover;;
+}
+.primogems .icon-yzmd {
+  background: url("background/GachaTicket1.webp") no-repeat 50% / cover;;
+}
+.primogems .icon-jmmd {
+  background: url("background/GachaTicket2.webp") no-repeat 50% / cover;;
 }
 .primogems .text {
   margin-left: 18px;
