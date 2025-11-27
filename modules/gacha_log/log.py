@@ -231,19 +231,31 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         else:
             return ZZZClient(player_id=player_id, region=Region.OVERSEAS, lang="zh-cn")
 
-    async def get_gacha_log_data(self, user_id: int, player_id: int, authkey: str, is_lazy: bool) -> int:
+    async def get_gacha_log_data_by_hoyolab(
+        self, user_id: int, player_id: int, client: "ZZZClient", is_lazy: bool
+    ) -> int:
+        return await self.get_gacha_log_data(user_id, player_id, client, authkey="", is_lazy=is_lazy, by_hoyolab=True)
+
+    async def get_gacha_log_data_by_authkey(self, user_id: int, player_id: int, authkey: str, is_lazy: bool) -> int:
+        client = self.get_game_client(player_id)
+        return await self.get_gacha_log_data(user_id, player_id, client, authkey, is_lazy, by_hoyolab=False)
+
+    async def get_gacha_log_data(
+        self, user_id: int, player_id: int, client: "ZZZClient", authkey: str, is_lazy: bool, by_hoyolab: bool
+    ) -> int:
         """使用authkey获取调频记录数据，并合并旧数据
         :param user_id: 用户id
         :param player_id: 玩家id
+        :param client: simnet客户端
         :param authkey: authkey
         :param is_lazy: 是否快速导入
+        :param by_hoyolab: 是否使用hoyolab接口
         :return: 更新结果
         """
         new_num = 0
         gacha_log, _ = await self.load_history_info(str(user_id), str(player_id))
         # 将唯一 id 放入临时数据中，加快查找速度
         temp_id_data = {pool_name: [i.id for i in pool_data] for pool_name, pool_data in gacha_log.item_list.items()}
-        client = self.get_game_client(player_id)
         try:
             for pool_id, pool_name in GACHA_TYPE_LIST.items():
                 if pool_name not in temp_id_data:
@@ -255,7 +267,10 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                     with contextlib.suppress(ValueError):
                         min_id = int(gacha_log.item_list[pool_name][-1].id)
 
-                wish_history = await client.wish_history(pool_id.value, authkey=authkey, min_id=min_id)
+                if by_hoyolab:
+                    wish_history = await client.wish_history_by_hoyolab(pool_id.value, min_id=min_id)
+                else:
+                    wish_history = await client.wish_history(pool_id.value, authkey=authkey, min_id=min_id)
 
                 if not is_lazy:
                     min_id = min([i.id for i in wish_history[:20]]) if wish_history else min_id

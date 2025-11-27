@@ -41,7 +41,7 @@ from modules.gacha_log.helpers import from_url_get_authkey
 from modules.gacha_log.log import GachaLog
 from modules.gacha_log.migrate import GachaLogMigrate
 from modules.gacha_log.models import GachaLogInfo
-from plugins.tools.genshin import PlayerNotFoundError
+from plugins.tools.genshin import PlayerNotFoundError, GenshinHelper
 from plugins.tools.player_info import PlayerInfoSystem
 from utils.log import logger
 
@@ -71,17 +71,19 @@ WISHLOG_WEB = """<b>调频记录详细信息查询</b>
 class WishLogPluginData(TelegramObject):
     player_id: int = 0
     authkey: str = ""
+    by_hoyolab: bool = False
 
     def reset_data(self):
         self.player_id = 0
         self.authkey = ""
+        self.by_hoyolab = False
 
 
 class WishLogPlugin(Plugin.Conversation):
     """调频记录导入/导出/分析"""
 
     IMPORT_HINT = (
-        "<b>开始导入祈愿历史记录：请通过 https://zzz.rng.moe/en/tracker/import 获取调频记录链接后发送给我"
+        "<b>UID: %s\n\n开始导入祈愿历史记录：请通过 https://zzz.rng.moe/en/tracker/import 获取调频记录链接后发送给我"
         "（非 zzz.rng.moe 导出的文件数据）</b>\n\n"
         f"> 你还可以向{config.notice.bot_name}发送从其他工具导出的 UIGF {UIGF_VERSION} 标准的记录文件\n"
         "> 在绑定 Cookie 时添加 stoken 可能有特殊效果哦（仅限国服）\n"
@@ -96,6 +98,7 @@ class WishLogPlugin(Plugin.Conversation):
         cookie_service: CookiesService,
         player_info: PlayerInfoSystem,
         gacha_log_rank: GachaLogRankService,
+        helper: GenshinHelper,
     ):
         self.template_service = template_service
         self.players_service = players_service
@@ -104,14 +107,18 @@ class WishLogPlugin(Plugin.Conversation):
         self.gacha_log = GachaLog(gacha_log_rank_service=gacha_log_rank)
         self.wish_photo = None
         self.player_info = player_info
+        self.helper = helper
 
-    async def get_player_id(self, user_id: int, player_id: int, offset: int) -> int:
+    async def get_player(self, user_id: int, player_id: int, offset: int) -> "Player":
         """获取绑定的游戏ID"""
         logger.debug("尝试获取已绑定的绝区零账号")
         player = await self.players_service.get_player(user_id, player_id=player_id, offset=offset)
         if player is None:
             raise PlayerNotFoundError(user_id)
-        return player.player_id
+        return player
+
+    async def get_player_id(self, user_id: int, player_id: int, offset: int) -> int:
+        return (await self.get_player(user_id, player_id, offset)).player_id
 
     async def _refresh_user_data(
         self,
@@ -121,6 +128,7 @@ class WishLogPlugin(Plugin.Conversation):
         authkey: str = None,
         verify_uid: bool = True,
         is_lazy: bool = True,
+        by_hoyolab: bool = False,
     ) -> str:
         """刷新用户数据
         :param user: 用户
@@ -130,12 +138,15 @@ class WishLogPlugin(Plugin.Conversation):
         """
         try:
             logger.debug("尝试获取已绑定的绝区零账号")
-            if authkey:
-                new_num = await self.gacha_log.get_gacha_log_data(user.id, player_id, authkey, is_lazy)
-                return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条调频记录"
-            if data:
+            new_num = 0
+            if by_hoyolab:
+                async with self.helper.genshin(user.id, player_id=player_id) as client:
+                    new_num = await self.gacha_log.get_gacha_log_data_by_hoyolab(user.id, player_id, client, is_lazy)
+            elif authkey:
+                new_num = await self.gacha_log.get_gacha_log_data_by_authkey(user.id, player_id, authkey, is_lazy)
+            elif data:
                 new_num = await self.gacha_log.import_gacha_log_data(user.id, player_id, data, verify_uid)
-                return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条调频记录"
+            return "更新完成，本次没有新增数据" if new_num == 0 else f"更新完成，本次共新增{new_num}条调频记录"
         except GachaLogNotFound:
             return WISHLOG_NOT_FOUND
         except GachaLogAccountNotFound:
@@ -205,18 +216,19 @@ class WishLogPlugin(Plugin.Conversation):
         self.add_delete_message_job(reply, delay=1)
         await message.reply_text(text, reply_markup=ReplyKeyboardRemove())
 
-    async def can_gen_authkey(self, user_id: int, player_id: int) -> bool:
-        player_info = await self.players_service.get_player(user_id, region=RegionEnum.HYPERION, player_id=player_id)
-        if player_info is not None:
-            cookies = await self.cookie_service.get(user_id, account_id=player_info.account_id)
-            if (
-                cookies is not None
-                and cookies.data
-                and "stoken" in cookies.data
-                and next((value for key, value in cookies.data.items() if key in ["ltuid", "login_uid"]), None)
-            ):
-                return True
+    async def can_use_hoyolab(self, user_id: int, player_info: "Player") -> bool:
+        cookies = await self.cookie_service.get(user_id, account_id=player_info.account_id)
+        if cookies is not None and cookies.data:
+            return True
         return False
+
+    async def verify_cookie_token(self, uid: int, player_id: int) -> bool:
+        try:
+            async with self.helper.genshin(uid, player_id=player_id) as client:
+                await client.verify_cookie_token()
+            return True
+        except Exception:
+            return False
 
     async def gen_authkey(self, uid: int, player_id: int) -> Optional[str]:
         player_info = await self.players_service.get_player(uid, region=RegionEnum.HYPERION, player_id=player_id)
@@ -238,19 +250,19 @@ class WishLogPlugin(Plugin.Conversation):
         uid, offset = self.get_real_uid_or_offset(update)
         message = update.effective_message
         user = update.effective_user
-        player_id = await self.get_player_id(user.id, uid, offset)
+        player = await self.get_player(user.id, uid, offset)
         wish_log_plugin_data: WishLogPluginData = context.chat_data.get("wish_log_plugin_data")
         if wish_log_plugin_data is None:
             wish_log_plugin_data = WishLogPluginData()
             context.chat_data["wish_log_plugin_data"] = wish_log_plugin_data
         else:
             wish_log_plugin_data.reset_data()
-        wish_log_plugin_data.player_id = player_id
+        wish_log_plugin_data.player_id = player.player_id
         logger.info("用户 %s[%s] 导入调频记录命令请求", user.full_name, user.id)
         keyboard = None
-        if await self.can_gen_authkey(user.id, player_id):
+        if await self.can_use_hoyolab(user.id, player):
             keyboard = ReplyKeyboardMarkup([["自动导入"], ["退出"]], one_time_keyboard=True)
-        await message.reply_text(self.IMPORT_HINT, parse_mode="html", reply_markup=keyboard)
+        await message.reply_text(self.IMPORT_HINT % player.player_id, parse_mode="html", reply_markup=keyboard)
         return INPUT_URL
 
     @conversation.state(state=INPUT_URL)
@@ -268,18 +280,19 @@ class WishLogPlugin(Plugin.Conversation):
             await message.reply_text("请发送文件或链接")
             return INPUT_URL
         if message.text == "自动导入":
-            authkey = await self.gen_authkey(user.id, player_id)
-            if not authkey:
+            cookie_token = await self.verify_cookie_token(user.id, player_id)
+            if not cookie_token:
                 await message.reply_text(
                     "自动生成 authkey 失败，请尝试通过其他方式导入。", reply_markup=ReplyKeyboardRemove()
                 )
                 return ConversationHandler.END
+            wish_log_plugin_data.by_hoyolab = True
         elif message.text == "退出":
-            await message.reply_text("取消导入跃迁记录", reply_markup=ReplyKeyboardRemove())
+            await message.reply_text("取消导入调频记录", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         else:
             authkey = from_url_get_authkey(message.text)
-        wish_log_plugin_data.authkey = authkey
+            wish_log_plugin_data.authkey = authkey
         keyboard = ReplyKeyboardMarkup([["快速导入（推荐）"], ["全量刷新"], ["退出"]], one_time_keyboard=True)
         await message.reply_text("请选择导入方式", parse_mode="html", reply_markup=keyboard)
         return INPUT_LAZY
@@ -292,16 +305,23 @@ class WishLogPlugin(Plugin.Conversation):
         wish_log_plugin_data: WishLogPluginData = context.chat_data.get("wish_log_plugin_data")
         player_id = wish_log_plugin_data.player_id
         authkey = wish_log_plugin_data.authkey
+        by_hoyolab = wish_log_plugin_data.by_hoyolab
         is_lazy = True
         if message.text == "全量刷新":
             is_lazy = False
         elif message.text == "退出":
             await message.reply_text("取消导入调频记录", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
-        logger.info("用户 %s[%s] 从 authkey 导入调频记录 is_lazy[%s]", user.full_name, user.id, is_lazy)
+        logger.info(
+            "用户 %s[%s] 从 authkey 导入调频记录 is_lazy[%s] by_hoyolab[%s]",
+            user.full_name,
+            user.id,
+            is_lazy,
+            by_hoyolab,
+        )
         reply = await message.reply_text(WAITING, reply_markup=ReplyKeyboardRemove())
         await message.reply_chat_action(ChatAction.TYPING)
-        text = await self._refresh_user_data(user, player_id, authkey=authkey, is_lazy=is_lazy)
+        text = await self._refresh_user_data(user, player_id, authkey=authkey, is_lazy=is_lazy, by_hoyolab=by_hoyolab)
         self.add_delete_message_job(reply, delay=1)
         await message.reply_text(text, reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END

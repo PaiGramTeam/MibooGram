@@ -2504,7 +2504,7 @@ wheels = [
 [[package]]
 name = "simnet"
 version = "0.2.0"
-source = { git = "https://github.com/PaiGramTeam/SIMNet#2738a7be99eefd335c746cd9d7b3ea0768da63cc" }
+source = { git = "https://github.com/PaiGramTeam/SIMNet#ad19bf13643a00fa0187682bf867523c59d8534e" }
 dependencies = [
     { name = "httpx" },
     { name = "pydantic" },
