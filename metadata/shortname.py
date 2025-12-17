@@ -53,7 +53,7 @@ roles = {
     1471: ["般岳", "Banyue", "banyue"],
     1481: ["琉音", "Dialyn", "dialyn"],
 }
-not_real_roles = [2011, 2021, 1471]
+not_real_roles = [2011, 2021]
 weapons = {
     12001: ["「月相」-望"],
     12002: ["「月相」-晦"],
