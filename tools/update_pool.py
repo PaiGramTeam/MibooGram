@@ -59,7 +59,7 @@ class WarpData(BaseModel):
         name = "|".join([i for i in set(self.name) if i])
         print("{")
         print(f'    "five": {self.five},')
-        print(f'    "four": {self.four},')
+        print(f'    "four": {list(set(self.four))},')
         print(f'    "name": "{name}",')
         print(f'    "from": "{from_time}",')
         print(f'    "to": "{to_time}",')
@@ -68,7 +68,7 @@ class WarpData(BaseModel):
 
 def parse_text(text):
     # 分割不同版本
-    version_sections = re.split(r"===(.+?)===", text)[3:]
+    version_sections = re.split(r"===(.+?)===", text)[1:]
 
     for i in range(0, len(version_sections), 2):
         version = version_sections[i].strip()
@@ -86,12 +86,14 @@ def parse_text(text):
                 if avatar_pool:
                     avatar_pool.name.extend(warp_data.name)
                     avatar_pool.five.extend(warp_data.five)
+                    avatar_pool.four.extend(warp_data.four)
                 else:
                     avatar_pool = warp_data
             elif "音擎频段" in block:
                 if weapon_pool:
                     weapon_pool.name.extend(warp_data.name)
                     weapon_pool.five.extend(warp_data.five)
+                    weapon_pool.four.extend(warp_data.four)
                 else:
                     weapon_pool = warp_data
         print(version)
