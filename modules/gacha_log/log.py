@@ -333,8 +333,8 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         for item in data:
             count += 1
             if item.rank_type == "5":
-                if item.item_type == "代理人" and pool_name in {"代理人调频", "常驻调频"}:
-                    if pool_name == "代理人调频":
+                if item.item_type == "代理人" and pool_name in {"代理人调频", "常驻调频", "代理人重映调频"}:
+                    if pool_name == "代理人调频" or pool_name == "代理人重映调频":
                         isUp, isBig = (
                             self.check_avatar_up(item.name, item.time),
                             (not result[-1].isUp) if result else False,
@@ -351,7 +351,7 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
                         "time": item.time,
                     }
                     result.append(FiveStarItem.construct(**data))
-                elif item.item_type == "音擎" and pool_name in {"音擎调频", "常驻调频"}:
+                elif item.item_type == "音擎" and pool_name in {"音擎调频", "常驻调频", "音擎重映调频"}:
                     data = {
                         "name": item.name,
                         "icon": assets.weapon.icon(item.name).as_uri() if assets else "",
@@ -581,10 +581,10 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
         all_five, no_five_star = await self.get_all_5_star_items(data, assets, pool_name)
         all_four, no_four_star = await self.get_all_4_star_items(data, assets)
         summon_data = None
-        if pool == ZZZBannerType.CHARACTER:
+        if pool in [ZZZBannerType.CHARACTER, ZZZBannerType.CHARACTER_RETURN]:
             summon_data = self.get_2_pool_data(total, all_five, no_five_star, no_four_star)
             pool_name = self.count_fortune(pool_name, summon_data)
-        elif pool in [ZZZBannerType.WEAPON, ZZZBannerType.BANGBOO]:
+        elif pool in [ZZZBannerType.WEAPON, ZZZBannerType.BANGBOO, ZZZBannerType.WEAPON_RETURN]:
             summon_data = self.get_3_pool_data(total, all_five, all_four, no_five_star, no_four_star)
             pool_name = self.count_fortune(pool_name, summon_data, True)
         elif pool == ZZZBannerType.STANDARD:

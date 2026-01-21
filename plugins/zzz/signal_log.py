@@ -483,7 +483,7 @@ class WishLogPlugin(Plugin.Conversation):
                 for k, v in {"log": "", "count": "（按卡池）"}.items():
                     row.append(
                         InlineKeyboardButton(
-                            f"{pool.replace('祈愿', '')}{v}",
+                            f"{pool.replace('调频', '')}{v}",
                             callback_data=f"get_wish_log|{user_id}|{uid}|{k}|{pool}",
                         )
                     )
@@ -545,6 +545,8 @@ class WishLogPlugin(Plugin.Conversation):
                 pool_type = ZZZBannerType.STANDARD
             elif "邦布" in args:
                 pool_type = ZZZBannerType.BANGBOO
+            elif "自选" in args:
+                pool_type = ZZZBannerType.CHARACTER_RETURN
         self.log_user(update, logger.info, "调频记录命令请求 || 参数 %s", pool_type.name if pool_type else None)
         try:
             player_id = await self.get_player_id(user_id, uid, offset)
@@ -753,6 +755,8 @@ class WishLogPlugin(Plugin.Conversation):
             "音擎": ZZZBannerType.WEAPON,
             "邦布": ZZZBannerType.BANGBOO,
             "常驻": ZZZBannerType.STANDARD,
+            "代理人重映": ZZZBannerType.CHARACTER_RETURN,
+            "音擎重映": ZZZBannerType.WEAPON_RETURN,
         }
         data = []
         for k, v in types.items():

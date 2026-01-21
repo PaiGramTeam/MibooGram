@@ -31,6 +31,8 @@ class GachaLogRanks:
         "音擎调频": GachaLogTypeEnum.WEAPON,
         "常驻调频": GachaLogTypeEnum.DEFAULT,
         "邦布调频": GachaLogTypeEnum.PET,
+        "代理人重映调频": GachaLogTypeEnum.HUN,
+        "音擎重映调频": GachaLogTypeEnum.DEFAULT_WEAPON,
     }
     ITEM_LIST_MAP_REV = {v: k for k, v in ITEM_LIST_MAP.items()}
     BANNER_TYPE_MAP = {
@@ -38,6 +40,8 @@ class GachaLogRanks:
         "音擎调频": ZZZBannerType.WEAPON,
         "常驻调频": ZZZBannerType.PERMANENT,
         "邦布调频": ZZZBannerType.BANGBOO,
+        "代理人重映调频": ZZZBannerType.CHARACTER_RETURN,
+        "音擎重映调频": ZZZBannerType.WEAPON_RETURN,
     }
     SCORE_TYPE_MAP = {
         "五星平均": GachaLogQueryTypeEnum.FIVE_STAR_AVG,

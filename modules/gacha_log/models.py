@@ -55,8 +55,8 @@ class GachaItem(BaseModel):
     @field_validator("gacha_type")
     @classmethod
     def check_gacha_type(cls, v):
-        if v not in {"1", "2", "3", "5"}:
-            raise ValueError(f"gacha_type must be 1, 2, 3 or 5, invalid value: {v}")
+        if v not in {"1", "2", "3", "5", "102", "103"}:
+            raise ValueError(f"gacha_type must be 1, 2, 3, 5, 102 or 103, invalid value: {v}")
         return v
 
     @field_validator("item_type")
@@ -93,6 +93,8 @@ class GachaLogInfo(BaseModel):
         "音擎调频": [],
         "常驻调频": [],
         "邦布调频": [],
+        "代理人重映调频": [],
+        "音擎重映调频": [],
     }
 
     @property
@@ -155,6 +157,8 @@ class ZZZGFGachaType(Enum):
     CHARACTER = "2"
     WEAPON = "3"
     BANGBOO = "5"
+    CHARACTER_RETURN = "102"
+    WEAPON_RETURN = "103"
 
 
 class UIGFItem(BaseModel):

@@ -59,6 +59,12 @@ class WishLogRankPlugin(Plugin):
         ("常驻-五星平均", GachaLogTypeEnum.DEFAULT, GachaLogQueryTypeEnum.FIVE_STAR_AVG),
         ("邦布-总抽数", GachaLogTypeEnum.PET, GachaLogQueryTypeEnum.TOTAL),
         ("邦布-五星平均", GachaLogTypeEnum.PET, GachaLogQueryTypeEnum.FIVE_STAR_AVG),
+        ("代理人重映-总抽数", GachaLogTypeEnum.HUN, GachaLogQueryTypeEnum.TOTAL),
+        ("代理人重映-五星平均", GachaLogTypeEnum.HUN, GachaLogQueryTypeEnum.FIVE_STAR_AVG),
+        ("代理人重映-UP平均", GachaLogTypeEnum.HUN, GachaLogQueryTypeEnum.UP_STAR_AVG),
+        ("代理人重映-小保底百分比", GachaLogTypeEnum.HUN, GachaLogQueryTypeEnum.NO_WARP),
+        ("音擎重映-总抽数", GachaLogTypeEnum.DEFAULT_WEAPON, GachaLogQueryTypeEnum.TOTAL),
+        ("音擎重映-五星平均", GachaLogTypeEnum.DEFAULT_WEAPON, GachaLogQueryTypeEnum.FIVE_STAR_AVG),
     ]
 
     def __init__(
