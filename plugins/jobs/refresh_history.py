@@ -12,16 +12,18 @@ from telegram.error import BadRequest, Forbidden
 
 from core.plugin import Plugin, job
 from core.services.history_data.services import (
-    HistoryDataAbyssServices,
     HistoryDataLedgerServices,
+    HistoryDataChallengeMemServices,
+    HistoryDataChallengeHadalServices,
 )
 from gram_core.basemodel import RegionEnum
 from gram_core.plugin import handler
 from gram_core.services.cookies import CookiesService
 from gram_core.services.cookies.models import CookiesStatusEnum
 from modules.errorpush import SentryClient
-from plugins.zzz.challenge import ChallengePlugin
 from plugins.tools.genshin import GenshinHelper, PlayerNotFoundError, CookiesNotFoundError
+from plugins.zzz.challenge_hadal import ChallengeHadalPlugin
+from plugins.zzz.challenge_mem import ChallengeMemPlugin
 from plugins.zzz.ledger import LedgerPlugin
 from utils.log import logger
 
@@ -45,13 +47,15 @@ class RefreshHistoryJob(Plugin):
         self,
         cookies: CookiesService,
         genshin_helper: GenshinHelper,
-        history_abyss: HistoryDataAbyssServices,
+        history_abyss: HistoryDataChallengeHadalServices,
         history_ledger: HistoryDataLedgerServices,
+        history_abyss_mem: HistoryDataChallengeMemServices,
     ):
         self.cookies = cookies
         self.genshin_helper = genshin_helper
         self.history_data_abyss = history_abyss
         self.history_data_ledger = history_ledger
+        self.history_data_abyss_mem = history_abyss_mem
 
     @staticmethod
     async def send_notice(context: "ContextTypes.DEFAULT_TYPE", user_id: int, notice_text: str):
@@ -64,14 +68,26 @@ class RefreshHistoryJob(Plugin):
 
     async def save_abyss_data(self, client: "ZZZClient") -> bool:
         uid = client.player_id
-        abyss_data = await client.get_zzz_challenge(uid, previous=False, lang="zh-cn")
-        if abyss_data.has_data:
-            return await ChallengePlugin.save_abyss_data(self.history_data_abyss, uid, abyss_data)
+        abyss_data = await client.get_zzz_hadal_info_v2(uid, previous=False, lang="zh-cn")
+        if abyss_data.hadal_info_v2.season and abyss_data.hadal_info_v2.fourth_layer_detail:
+            return await ChallengeHadalPlugin.save_abyss_data(self.history_data_abyss, uid, abyss_data)
         return False
 
     async def send_abyss_notice(self, context: "ContextTypes.DEFAULT_TYPE", user_id: int, uid: int):
         now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         notice_text = NOTICE_TEXT % ("防卫战历史记录", now, uid, "挑战记录")
+        await self.send_notice(context, user_id, notice_text)
+
+    async def save_abyss_mem_data(self, client: "ZZZClient") -> bool:
+        uid = client.player_id
+        abyss_data = await client.get_zzz_challenge_mem(uid, previous=False, lang="zh-cn")
+        if abyss_data.has_data and abyss_data.list:
+            return await ChallengeMemPlugin.save_abyss_data(self.history_data_abyss_mem, uid, abyss_data)
+        return False
+
+    async def send_abyss_mem_notice(self, context: "ContextTypes.DEFAULT_TYPE", user_id: int, uid: int):
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        notice_text = NOTICE_TEXT % ("危局强袭战历史记录", now, uid, "挑战记录")
         await self.send_notice(context, user_id, notice_text)
 
     async def _save_ledger_data(self, client: "ZZZClient", year: int, month: int) -> bool:
@@ -115,6 +131,8 @@ class RefreshHistoryJob(Plugin):
         text += f"防卫战数据移除数量：{num1}\n"
         num2 = await self.history_data_ledger.remove_same_data()
         text += f"开拓月历数据移除数量：{num2}\n"
+        num3 = await self.history_data_abyss_mem.remove_same_data()
+        text += f"危局强袭战数据移除数量：{num3}\n"
         await reply.edit_text(text)
 
     @handler.command(command="refresh_all_history", block=False, admin=True)
@@ -141,6 +159,8 @@ class RefreshHistoryJob(Plugin):
                             await self.send_abyss_notice(context, user_id, client.player_id)
                         if await self.save_ledger_data(client):
                             await self.send_ledger_notice(context, user_id, client.player_id)
+                        if await self.save_abyss_mem_data(client):
+                            await self.send_abyss_mem_notice(context, user_id, client.player_id)
                 except (InvalidCookies, PlayerNotFoundError, CookiesNotFoundError):
                     continue
                 except SimnetBadRequest as exc:

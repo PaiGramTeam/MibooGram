@@ -1,0 +1,60 @@
+{% set data = abyss_data.fourth_layer_detail %}
+ <div class="floors">
+        <div class="floor floor-abyss">
+            <div class="head">
+                <div class="floor-name">
+                    <div class="floor_num"></div>
+                    <div>
+                        <div>第四防线</div>
+                    </div>
+                </div>
+                <div class="star star{{ data.rating }}"></div>
+            </div>
+            <div class="hr"></div>
+            <div class="chamber">
+                <div class="chamber-info">
+                    <div>
+                        <span style="color: white;">通关时刻：{{ four_finish_time }}</span>
+                    </div>
+                </div>
+                <div class="battles">
+                    {% for node in four_floors %}
+                    <div class="battle">
+                        {% for character in node.floor.avatar_list %}
+                            <div class="character">
+                                {% if character.rank > 0 %}
+                                    {% set constellation = character.rank %}
+                                    {% set bg = ['blue', 'blue', 'green', 'green', 'red', 'red'][constellation - 1] %}
+                                    <div style="background-color: var(--{{ bg }})">
+                                        {{ constellation }} 命
+                                    </div>
+                                {% endif %}
+                                <div class="element" style="background-image: url('../../img/attribute/{{ character.element_type }}.png')"></div>
+                                <div class="icon"
+                                     style="background-image: url('../../background/rarity/half/{{ character.rarity }}.png')">
+                                    <img src="{{ character_icons[character.id] }}" alt=""/>
+                                </div>
+                                <div class="caption">Lv.{{ character.level }}</div>
+                            </div>
+                        {% endfor %}
+                        {% if node.floor.buddy %}
+                            {% set character = node.floor.buddy %}
+                            <div class="character">
+                                <div class="icon"
+                                     style="background-image: url('../../background/rarity/half/{{ character.rarity }}.png')">
+                                    <img src="{{ buddy_icons[character.id] }}" alt=""/>
+                                </div>
+                                <div class="caption">Lv.{{ character.level }}</div>
+                            </div>
+                        {% endif %}
+                        {% if loop.length > 1 %}
+                            <div class="battle-info">
+                                通关时长：{{ node.battle_time }} - {{ ['上', '下'][loop.index - 1] }}半
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+ </div>

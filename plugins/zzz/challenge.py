@@ -1,24 +1,22 @@
 """防卫战数据查询"""
 
 import math
-from functools import lru_cache, partial
-from typing import List, Optional, Tuple, TYPE_CHECKING
+from functools import lru_cache
+from typing import List, Optional, Tuple
 
 from simnet.models.zzz.chronicle.challenge import ZZZChallenge
 from telegram import Message, Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.constants import ChatAction, ParseMode
+from telegram.constants import ChatAction
 from telegram.ext import CallbackContext, filters, ContextTypes
 
 from core.dependence.assets import AssetsService
 from core.plugin import Plugin, handler
-from core.services.cookies.error import TooManyRequestPublicCookies
 from core.services.history_data.models import HistoryDataAbyss
 from core.services.history_data.services import HistoryDataAbyssServices
 from core.services.template.models import RenderResult
 from core.services.template.services import TemplateService
 from gram_core.config import config
 from gram_core.dependence.redisdb import RedisDB
-from gram_core.plugin.methods.inline_use_data import IInlineUseData
 from plugins.tools.genshin import GenshinHelper
 from utils.enkanetwork import RedisCache
 from utils.log import logger
@@ -30,12 +28,7 @@ try:
 except ImportError:
     import json as jsonlib
 
-if TYPE_CHECKING:
-    from simnet import ZZZClient
 
-
-cmd_pattern = r"(?i)^/challenge(?:@[\w]+)?\s*((?:\d+)|(?:all))?\s*(pre)?"
-msg_pattern = r"^防卫战数据((?:查询)|(?:总览))(上期)?\D?(\d*)?.*?$"
 MAX_FLOOR = 7
 MAX_STARS = MAX_FLOOR * 3
 
@@ -89,82 +82,6 @@ class ChallengePlugin(Plugin):
                     uid = player_info.player_id
         return uid
 
-    @handler.command("challenge", block=False)
-    @handler.message(filters.Regex(msg_pattern), block=False)
-    async def command_start(self, update: Update, context: CallbackContext) -> None:
-        user_id = await self.get_real_user_id(update)
-        uid, offset = self.get_real_uid_or_offset(update)
-        args = self.get_args(context)
-        message = update.effective_message
-        uid: int = await self.get_uid(user_id, message.reply_to_message, uid, offset)
-
-        # 若查询帮助
-        if (message.text.startswith("/") and "help" in message.text) or "帮助" in message.text:
-            await message.reply_text(
-                "<b>防卫战数据</b>功能使用帮助（中括号表示可选参数）\n\n"
-                "指令格式：\n<code>/challenge + [层数/all] + [pre]</code>\n（<code>pre</code>表示上期）\n\n"
-                "文本格式：\n<code>防卫战数据 + 查询/总览 + [上期] + [层数]</code> \n\n"
-                "例如以下指令都正确：\n"
-                "<code>/challenge</code>\n<code>/challenge 1 pre</code>\n<code>/challenge all pre</code>\n"
-                "<code>防卫战数据查询</code>\n<code>防卫战数据查询上期第1层</code>\n<code>防卫战数据总览上期</code>",
-                parse_mode=ParseMode.HTML,
-            )
-            self.log_user(update, logger.info, "查询[bold]防卫战数据[/bold]帮助", extra={"markup": True})
-            return
-
-        # 解析参数
-        previous = get_args(" ".join([i for i in args if not i.startswith("@")]))
-
-        self.log_user(
-            update,
-            logger.info,
-            "[bold]防卫战挑战数据[/bold]请求: uid=%s previous=%s",
-            uid,
-            previous,
-            extra={"markup": True},
-        )
-
-        async def reply_message_func(content: str) -> None:
-            _reply_msg = await message.reply_text(f"绳匠 (<code>{uid}</code>) {content}", parse_mode=ParseMode.HTML)
-
-        reply_text: Optional[Message] = None
-
-        try:
-            async with self.helper.genshin_or_public(user_id, uid=uid) as client:
-                reply_text = await message.reply_text(
-                    f"{config.notice.bot_name} 需要时间整理防卫战数据，还请耐心等待哦~"
-                )
-                await message.reply_chat_action(ChatAction.TYPING)
-                abyss_data = await self.get_rendered_pic_data(client, uid, previous)
-                images = await self.get_rendered_pic(abyss_data, uid)
-        except TooManyRequestPublicCookies:
-            reply_message = await message.reply_text("查询次数太多，请您稍后重试")
-            if filters.ChatType.GROUPS.filter(message):
-                self.add_delete_message_job(reply_message)
-                self.add_delete_message_job(message)
-            return
-        except AbyssUnlocked:  # 若防卫战未解锁
-            await reply_message_func("还未解锁防卫战哦~")
-            return
-        except AbyssFastPassed:  # 若防卫战已快速通过
-            await reply_message_func("本层已被快速通过，无详细数据~")
-            return
-        except IndexError:  # 若防卫战为挑战此层
-            await reply_message_func("还没有挑战本层呢，咕咕咕~")
-            return
-        except ValueError as e:
-            if uid:
-                await reply_message_func("UID 输入错误，请重新输入")
-                return
-            raise e
-
-        await message.reply_chat_action(ChatAction.UPLOAD_PHOTO)
-        await images.reply_photo(message)
-
-        if reply_text is not None:
-            await reply_text.delete()
-        self.log_user(update, logger.info, "[bold]防卫战挑战数据[/bold]: 成功发送图片", extra={"markup": True})
-
     def get_floor_data(self, abyss_data: "ZZZChallenge", floor: int):
         try:
             floor_data = abyss_data.floors[-floor]
@@ -192,12 +109,6 @@ class ChallengePlugin(Plugin):
             "buddy_icons": buddy_icons,
         }
         return render_data
-
-    async def get_rendered_pic_data(self, client: "ZZZClient", uid: int, previous: bool) -> "ZZZChallenge":
-        abyss_data = await client.get_zzz_challenge(uid, previous=previous, lang="zh-cn")
-        if abyss_data.has_data:
-            await self.save_abyss_data(self.history_data_abyss, uid, abyss_data)
-        return abyss_data
 
     @staticmethod
     def from_seconds_to_hours(seconds: int) -> str:
@@ -372,14 +283,14 @@ class ChallengePlugin(Plugin):
             send_buttons.append(last_button)
         return send_buttons
 
-    @handler.command("challenge_history", block=False)
-    @handler.message(filters.Regex(r"^防卫战历史数据"), block=False)
+    @handler.command("challenge_history_v1", block=False)
+    @handler.message(filters.Regex(r"^旧版防卫战历史数据"), block=False)
     async def abyss_history_command_start(self, update: Update, _: CallbackContext) -> None:
         user_id = await self.get_real_user_id(update)
         message = update.effective_message
         uid, offset = self.get_real_uid_or_offset(update)
         uid: int = await self.get_uid(user_id, message.reply_to_message, uid, offset)
-        self.log_user(update, logger.info, "查询防卫战历史数据 uid[%s]", uid)
+        self.log_user(update, logger.info, "查询防卫战 v1 历史数据 uid[%s]", uid)
 
         async with self.helper.genshin_or_public(user_id, uid=uid) as _:
             await self.get_session_button_data(user_id, uid, force=True)
@@ -461,44 +372,3 @@ class ChallengePlugin(Plugin):
             return
         data_id = int(result)
         await self.get_abyss_history_floor(update, data_id)
-
-    async def abyss_use_by_inline(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE", previous: bool):
-        callback_query = update.callback_query
-        user = update.effective_user
-        user_id = user.id
-        uid = IInlineUseData.get_uid_from_context(context)
-
-        self.log_user(update, logger.info, "查询防卫战挑战总览数据 previous[%s]", previous)
-        notice = None
-        try:
-            async with self.helper.genshin_or_public(user_id, uid=uid) as client:
-                if not client.public:
-                    await client.get_record_cards()
-                abyss_data = await self.get_rendered_pic_data(client, uid, previous)
-                image = await self.get_rendered_pic(abyss_data, uid)
-        except AbyssUnlocked:  # 若深渊未解锁
-            notice = "还未解锁防卫战哦~"
-        except TooManyRequestPublicCookies:
-            notice = "查询次数太多，请您稍后重试"
-
-        if notice:
-            await callback_query.answer(notice, show_alert=True)
-            return
-
-        await image.edit_inline_media(callback_query)
-
-    async def get_inline_use_data(self) -> List[Optional[IInlineUseData]]:
-        return [
-            IInlineUseData(
-                text="本期防卫战总览",
-                hash="challenge_current",
-                callback=partial(self.abyss_use_by_inline, previous=False),
-                player=True,
-            ),
-            IInlineUseData(
-                text="上期防卫战总览",
-                hash="challenge_previous",
-                callback=partial(self.abyss_use_by_inline, previous=True),
-                player=True,
-            ),
-        ]

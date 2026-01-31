@@ -59,6 +59,7 @@ class SetCommandPlugin(Plugin):
             BotCommand("avatar", "查询角色攻略"),
             BotCommand("challenge", "防卫战信息查询"),
             BotCommand("challenge_history", "防卫战历史信息查询"),
+            BotCommand("challenge_history_v1", "旧版防卫战历史信息查询"),
             BotCommand("challenge_mem", "危局强袭战信息查询"),
             BotCommand("challenge_mem_history", "危局强袭战历史信息查询"),
             # UID 查询类

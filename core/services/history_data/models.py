@@ -1,6 +1,7 @@
 import enum
 
 from pydantic import BaseModel
+from simnet.models.zzz.chronicle.hadal import ZZZHadalInfo
 from simnet.models.zzz.diary import ZZZDiary
 from simnet.models.zzz.chronicle.challenge import ZZZChallenge
 from simnet.models.zzz.chronicle.challenge_mem import ZZZChallengeMem
@@ -13,6 +14,7 @@ __all__ = (
     "HistoryDataAbyss",
     "HistoryDataChallengeMem",
     "HistoryDataLedger",
+    "HistoryDataChallengeHadal",
 )
 
 
@@ -44,4 +46,12 @@ class HistoryDataLedger(BaseModel):
 
     @classmethod
     def from_data(cls, data: HistoryData) -> "HistoryDataLedger":
+        return cls.model_validate(data.data)
+
+
+class HistoryDataChallengeHadal(BaseModel):
+    abyss_data: ZZZHadalInfo
+
+    @classmethod
+    def from_data(cls, data: HistoryData) -> "HistoryDataChallengeHadal":
         return cls.model_validate(data.data)

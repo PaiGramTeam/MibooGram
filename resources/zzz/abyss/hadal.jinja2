@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="zh-ch">
+<head>
+    <meta charset="UTF-8">
+    <title>overview</title>
+    <link type="text/css" href="./style.css" rel="stylesheet"/>
+    <link type="text/css" href="../../styles/public.css" rel="stylesheet"/>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        .overview {
+            padding: 20px 80px;
+            border-radius: unset;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    {% set overview_class = 'overview-abyss' %}
+    <div class="overview {{ overview_class }}">
+        <div class="title">{{ title }}挑战回顾</div>
+        <div class="summarize">
+            <div>
+                <div>UID: {{ uid }}</div>
+                <div>
+                    <img style="height: 40px" src="{{ abyss_data_.icon }}" alt=""/>
+                    {{ abyss_data_.nick_name }}
+                </div>
+            </div>
+            <div>
+                <div>本期开始: {{ start_time }}</div>
+                <div>本期结束: {{ end_time }}</div>
+            </div>
+            <div>
+                <div>
+                    <span>总分：{{ scores }}</span>
+                    <span style="color: yellowgreen"> ~ {{ rank_percent / 100.0 }} %</span>
+                </div>
+                <div class="star">
+                    <span>理论最高分：{{ max_score }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+        {% for data in fif_floors %}
+        {% include "zzz/abyss/floor_hadal.jinja2" %}
+        {% endfor %}
+        {% include "zzz/abyss/floor_hadal_four.jinja2" %}
+</div>
+</body>
+</html>
