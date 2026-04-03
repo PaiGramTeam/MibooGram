@@ -4,6 +4,7 @@ import math
 from functools import lru_cache, partial
 from typing import List, Optional, Tuple, TYPE_CHECKING
 
+from pydantic import ValidationError
 from simnet.models.zzz.chronicle.challenge_mem import ZZZChallengeMem
 from telegram import Message, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
@@ -152,6 +153,8 @@ class ChallengeMemPlugin(Plugin):
         except IndexError:  # 若危局强袭战为挑战此层
             await reply_message_func("还没有挑战本层呢，咕咕咕~")
             return
+        except ValidationError as exc:
+            raise exc
         except ValueError as e:
             if uid:
                 await reply_message_func("UID 输入错误，请重新输入")

@@ -4,6 +4,7 @@ import math
 from functools import lru_cache, partial
 from typing import List, Optional, Tuple, TYPE_CHECKING
 
+from pydantic import ValidationError
 from simnet.models.zzz.chronicle.hadal import ZZZHadalInfo
 from telegram import Message, Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction, ParseMode
@@ -149,6 +150,8 @@ class ChallengeHadalPlugin(Plugin):
         except IndexError:  # 若防卫战为挑战此层
             await reply_message_func("还没有挑战本层呢，咕咕咕~")
             return
+        except ValidationError as exc:
+            raise exc
         except ValueError as e:
             if uid:
                 await reply_message_func("UID 输入错误，请重新输入")
@@ -204,7 +207,8 @@ class ChallengeHadalPlugin(Plugin):
             scores = abyss_data.brief.score
             max_score = abyss_data.brief.max_score
             rank_percent = abyss_data.brief.rank_percent
-            fif_floor_time = abyss_data.brief.challenge_time.datetime.strftime("%Y-%m-%d %H:%M:%S")
+            if abyss_data.brief.challenge_time:
+                fif_floor_time = abyss_data.brief.challenge_time.datetime.strftime("%Y-%m-%d %H:%M:%S")
 
         render_data = {
             "title": "防卫战",
@@ -213,7 +217,6 @@ class ChallengeHadalPlugin(Plugin):
             "scores": scores,
             "max_score": max_score,
             "rank_percent": rank_percent,
-            "fif_floor_time": fif_floor_time,
             "uid": mask_number(uid),
             "abyss_data_": abyss_data_,
             "abyss_data": abyss_data,
@@ -234,10 +237,13 @@ class ChallengeHadalPlugin(Plugin):
                     character_icons[ch.id] = self.assets_service.avatar.square(ch.id).as_uri()
                 if bu := floor_data_.buddy:
                     buddy_icons[bu.id] = self.assets_service.buddy.icon(bu.id).as_uri()
+                floor_time = fif_floor_time
+                if floor_data_.challenge_time:
+                    floor_time = floor_data_.challenge_time.datetime.strftime("%Y-%m-%d %H:%M:%S")
                 floors.append(
                     {
                         "floor": floor_data_,
-                        "battle_time": self.from_seconds_to_hours(floor_data_.battle_time),
+                        "floor_time": floor_time,
                     }
                 )
 
@@ -278,9 +284,14 @@ class ChallengeHadalPlugin(Plugin):
         rating = "未知评级"
         score = 0
         if brief := info.brief:
-            start_time = brief.challenge_time.datetime
+            if ct := brief.challenge_time:
+                start_time = ct.datetime
             rating = brief.rating
             score = brief.score
+        if fitfh := info.fitfh_layer_detail:
+            if layer := fitfh.layer_challenge_info_list:
+                if ct := layer[0].challenge_time:
+                    start_time = ct.datetime
         time = start_time.strftime("%Y.%m.%d")
         return f"{time} {score} {rating}".strip()
 
