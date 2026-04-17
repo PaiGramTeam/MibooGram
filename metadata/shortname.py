@@ -59,7 +59,8 @@ roles = {
     1511: ["南宫羽", "Nangong Yu", "nangong yu"],
     1521: ["希希芙", "Cissia", "cissia"],
 }
-not_real_roles = [2011, 2021, 1521]
+not_real_roles = [2011, 2021]
+not_real_roles.extend([])
 weapons = {
     12001: ["「月相」-望"],
     12002: ["「月相」-晦"],
