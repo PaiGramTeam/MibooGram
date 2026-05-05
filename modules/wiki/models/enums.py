@@ -14,6 +14,8 @@ class ZZZElementType(IntEnum):
     """ 冰 """
     ELECTRIC = 203
     """ 电 """
+    WIND = 204
+    """ 风 """
     ETHER = 205
     """ 以太 """
 
