@@ -49,7 +49,7 @@ roles = {
     1411: ["柚叶", "Yuzuha", "yuzuha"],
     1421: ["潘引壶", "Pan Yinhu", "pan yinhu"],
     1431: ["叶瞬光", "Ye Shunguang", "ye shunguang"],
-    1441: ["真斗", "Manato", "manato", "狛野真斗"],
+    1441: ["狛野真斗", "Manato", "manato", "真斗"],
     1451: ["卢西娅", "Lucia", "lucia"],
     1461: ["「席德」", "Seed", "seed"],
     1471: ["般岳", "Banyue", "banyue"],
@@ -62,7 +62,7 @@ roles = {
     1541: ["普罗米娅", "Promeia", "promeia"],
 }
 not_real_roles = [2011, 2021]
-not_real_roles.extend([1531])
+not_real_roles.extend([])
 weapons = {
     12001: ["「月相」-望"],
     12002: ["「月相」-晦"],
