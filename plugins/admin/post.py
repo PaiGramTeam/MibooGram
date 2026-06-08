@@ -3,29 +3,34 @@ import math
 import os
 import re
 from asyncio import create_subprocess_shell, subprocess
-from typing import List, Optional, Tuple, TYPE_CHECKING, Union
+from collections import OrderedDict
+from dataclasses import dataclass
+from io import BytesIO
+from typing import List, Optional, Tuple, TYPE_CHECKING
 
 import aiofiles
 from arkowrapper import ArkoWrapper
 from bs4 import BeautifulSoup
 from httpx import Timeout
+from pyrogram.errors import FloodWait, BadRequest as PyroBadRequest
+from pyrogram.file_id import FileId
+from pyrogram.raw.functions.messages import SendMessage
+from pyrogram.raw.types import InputDocument, InputPhoto, InputRichMessage
+from pyrogram.types import InputMediaPhoto, InputMediaVideo
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
-    InputMediaPhoto,
     ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
-    InputMediaDocument,
-    InputMediaVideo,
 )
 from telegram.constants import MessageLimit, ParseMode
 from telegram.error import BadRequest
 from telegram.ext import ConversationHandler, filters
-from telegram.helpers import escape_markdown
 
 from core.config import config
 from core.plugin import Plugin, conversation, handler
 from gram_core.basemodel import Settings, SettingsConfigDict
+from gram_core.dependence.mtproto import MTProto
 from gram_core.dependence.redisdb import RedisDB
 from gram_core.plugin import job
 from gram_core.services.groups.services import GroupService
@@ -37,22 +42,29 @@ from modules.apihelper.models.genshin.hyperion import ArtworkImage, PostTypeEnum
 from modules.errorpush import SentryClient
 from utils.helpers import sha1
 from utils.log import logger
+from utils.rich_text import PhotoType, json_to_blocks, BlockList
 
 if TYPE_CHECKING:
-    from bs4 import Tag
+    from pyrogram import Client
+
     from telegram import Update, Message
     from telegram.ext import ContextTypes
 
-    from modules.apihelper.models.genshin.hyperion import PostRecommend
+    from modules.apihelper.models.genshin.hyperion import PostRecommend, PostInfo
 
 
 class PostHandlerData:
     def __init__(self):
+        self.channel_id: int = -1
+        self.url: str = ""
+        self.tags: Optional[List[str]] = []
+        self.rich: Optional[InputRichMessage] = None
+        # 旧版推送相关字段
         self.post_text: str = ""
+        self.post_text_caption: str = ""
         self.post_images: Optional[List["ArtworkImage"]] = None
         self.delete_photo: Optional[List[int]] = []
-        self.channel_id: int = -1
-        self.tags: Optional[List[str]] = []
+        self.old_channel_id: int = -1
 
 
 class PostConfig(Settings):
@@ -61,23 +73,41 @@ class PostConfig(Settings):
     chat_id: Optional[int] = 0
     chat_ids: List[int] = []
     auto: Optional[bool] = False
+    new_channels: List[int] = []
 
     model_config = SettingsConfigDict(env_prefix="post_")
 
 
+@dataclass
+class FetchedPostData:
+    """``fetch_post_data`` 的返回值聚合，避免元组解包过深。"""
+
+    post_info: "PostInfo"
+    rich: "InputRichMessage"
+    post_tags: List[str]
+    url: str
+    post_subject: str
+    post_images: List["ArtworkImage"]
+    post_text: str
+    post_text_caption: str
+
+
 CHECK_POST, SEND_POST, CHECK_COMMAND, GTE_DELETE_PHOTO = range(10900, 10904)
 GET_POST_CHANNEL, GET_TAGS, GET_TEXT, GET_VIDEO = range(10904, 10908)
+# 旧版推送对话状态
+CHECK_POST_OLD, CHECK_COMMAND_OLD = range(10908, 10910)
+GET_POST_CHANNEL_OLD, SEND_POST_OLD = range(10910, 10912)
 post_config = PostConfig()
 
 
 class Post(Plugin.Conversation):
     """文章推送"""
 
-    MENU_KEYBOARD = ReplyKeyboardMarkup(
-        [["推送频道", "添加TAG"], ["编辑文字", "删除图片"], ["添加视频", "退出"]], True, True
-    )
+    MENU_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "添加TAG"], ["退出"]], True, True)
+    # 旧版推送的菜单：与旧版 post.py 保持基本一致
+    MENU_OLD_KEYBOARD = ReplyKeyboardMarkup([["推送频道", "添加TAG"], ["退出"]], True, True)
 
-    def __init__(self, redis: RedisDB, group_service: GroupService):
+    def __init__(self, redis: RedisDB, group_service: GroupService, mtp: MTProto):
         self.gids = [8]
         self.ffmpeg_enable = False
         self.cache_dir = os.path.join(os.getcwd(), "cache")
@@ -85,6 +115,8 @@ class Post(Plugin.Conversation):
         self.cache_key = "plugin:post:pushed"
         self.group_service = group_service
         self.send_lock = asyncio.Lock()  # 添加锁对象，确保 send_post_images 函数无法并发执行
+        self.mtp = mtp
+        assert mtp.client is not None, "必须启用 pyrogram 支持"
 
     def get_cache_key(self, bbs_type: "PostTypeEnum") -> str:
         return f"{self.cache_key}:{bbs_type.value}"
@@ -216,73 +248,6 @@ class Post(Plugin.Conversation):
                 await self.set_posted(post_type, post_id)
 
     @staticmethod
-    def parse_post_text(soup: BeautifulSoup, post_subject: str) -> Tuple[str, bool]:
-        def parse_tag(_tag: "Tag") -> str:
-            if _tag.name == "a":
-                href = _tag.get("href")
-                if href and href.startswith("/"):
-                    href = f"https://www.miyoushe.com{href}"
-                if href and href.startswith("http"):
-                    return f"[{escape_markdown(_tag.get_text(), version=2)}]({href})"
-            return escape_markdown(_tag.get_text(), version=2)
-
-        post_text = f"*{escape_markdown(post_subject, version=2)}*\n\n"
-        start = True
-        too_long = False
-        if post_p := soup.find_all("p"):
-            try:
-                for p in post_p:
-                    t = p.get_text()
-                    if not t and start:
-                        continue
-                    start = False
-                    for tag in p.contents:
-                        post_text_ = post_text + parse_tag(tag)
-                        if len(post_text_) >= (MessageLimit.CAPTION_LENGTH - 55):
-                            raise RecursionError
-                        post_text = post_text_
-                    post_text += "\n"
-            except RecursionError:
-                too_long = True
-        else:
-            post_text += f"{escape_markdown(soup.get_text(), version=2)}\n"
-        post_text = re.sub(r"\n{3,}", "\n\n", post_text).strip()
-        return post_text, too_long
-
-    @staticmethod
-    def safe_cut(text: str, length: int) -> str:
-        text = text[:length]
-        right_pattern = r"\[.*?\]\(.*?\)"
-        error_pattern = r"\[.*?\]"
-        right_length = re.findall(right_pattern, text)
-        error_length = re.findall(error_pattern, text)
-        if right_length == error_length:
-            return text
-        error_index = text.rindex(error_length[-1])
-        return text[:error_index]
-
-    @staticmethod
-    def input_media(
-        media: "ArtworkImage", *args, **kwargs
-    ) -> Union[None, InputMediaDocument, InputMediaPhoto, InputMediaVideo]:
-        if media.art_id == 114514:
-            doc = InputMediaVideo(media.file_name, *args, **kwargs)
-            doc._frozen = False
-            return doc
-        file_extension = media.file_extension
-        filename = media.file_name
-        doc = None
-        if file_extension is not None:
-            if file_extension in {"jpg", "jpeg", "png", "webp"}:
-                doc = InputMediaPhoto(media.data, *args, **kwargs)
-            if file_extension in {"gif", "mp4", "mov", "avi", "mkv", "webm", "flv"}:
-                doc = InputMediaVideo(media.data, filename=filename, *args, **kwargs)
-        if not doc:
-            doc = InputMediaDocument(media.data, *args, **kwargs)
-        doc._frozen = False
-        return doc
-
-    @staticmethod
     async def execute(command: str) -> Tuple[str, int]:
         process = await create_subprocess_shell(
             command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, stdin=subprocess.PIPE
@@ -342,6 +307,47 @@ class Post(Plugin.Conversation):
                     else:
                         logger.error("ffmpeg 执行失败\n%s", result)
         return media
+
+    @staticmethod
+    def parse_post_text(soup: BeautifulSoup, post_subject: str) -> Tuple[str, bool]:
+        """解析旧版推送用的纯文本 caption，pyrogram 不需要 MarkdownV2 转义。"""
+
+        def parse_tag(_tag) -> str:
+            if _tag.name == "a":
+                href = _tag.get("href")
+                if href and href.startswith("/"):
+                    href = f"https://www.miyoushe.com{href}"
+                if href and href.startswith("http"):
+                    return f"[{_tag.get_text()}]({href})"
+            return _tag.get_text()
+
+        post_text = f"{post_subject}\n\n"
+        start = True
+        too_long = False
+        if post_p := soup.find_all("p"):
+            try:
+                for p in post_p:
+                    t = p.get_text()
+                    if not t and start:
+                        continue
+                    start = False
+                    for tag in p.contents:
+                        post_text_ = post_text + parse_tag(tag)
+                        if len(post_text_) >= (MessageLimit.CAPTION_LENGTH - 55):
+                            raise RecursionError
+                        post_text = post_text_
+                    post_text += "\n"
+            except RecursionError:
+                too_long = True
+        else:
+            post_text += f"{soup.get_text()}\n"
+        post_text = re.sub(r"\n{3,}", "\n\n", post_text).strip()
+        return post_text, too_long
+
+    @staticmethod
+    def safe_cut(text: str, length: int) -> str:
+        """按字符长度截断。"""
+        return text[:length]
 
     @conversation.entry_point
     @handler.callback_query(pattern=r"^post_admin\|", block=False)
@@ -408,6 +414,41 @@ class Post(Plugin.Conversation):
             return ConversationHandler.END
         return await self.send_post_info(post_handler_data, message, post_id, post_type)
 
+    @conversation.entry_point
+    @handler.command(command="post_old", block=False, admin=True)
+    async def command_start_old(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+        """旧版推送入口，复用 pyrogram.send_media_group 发送 MarkdownV2 文本。"""
+        user = update.effective_user
+        message = update.effective_message
+        logger.info("用户 %s[%s] POST_OLD命令请求", user.full_name, user.id)
+        post_handler_data = context.chat_data.get("post_handler_data")
+        if post_handler_data is None:
+            post_handler_data = PostHandlerData()
+            context.chat_data["post_handler_data"] = post_handler_data
+        text = (
+            f"✿✿ヽ（°▽°）ノ✿ 你好！ {user.username} ，\n"
+            "旧版推送流程启动，只需复制URL回复即可 \n"
+            "退出投稿只需回复退出"
+        )
+        reply_keyboard = [["退出"]]
+        await message.reply_text(text, reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
+        return CHECK_POST_OLD
+
+    @conversation.state(state=CHECK_POST_OLD)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
+    async def check_post_old(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+        post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
+        message = update.effective_message
+        if message.text == "退出":
+            await message.reply_text("退出投稿", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+
+        post_id, post_type = Hyperion.extract_post_id(update.message.text)
+        if post_id == -1:
+            await message.reply_text("获取作品ID错误，请检查连接是否合法", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        return await self.send_post_info_old(post_handler_data, message, post_id, post_type)
+
     @staticmethod
     def get_tags_by_subject(post_subject: str) -> List[str]:
         """根据文章标题预设规则设置标签"""
@@ -419,7 +460,72 @@ class Post(Plugin.Conversation):
                     break
         return tags
 
-    async def fetch_post_data(self, post_id: int, post_type: "PostTypeEnum") -> tuple:
+    async def get_file_id(self, i: ArtworkImage) -> str | None:
+        max_retries = 5
+        bot: "Client" = self.mtp.client
+        for attempt in range(max_retries):
+            try:
+                if i.is_gif:
+                    file = await bot.send_animation(config.channels_helper, BytesIO(i.data), file_name=i.file_name)
+                    file_id = file.animation.file_id
+                elif i.is_video:
+                    file = await bot.send_video(config.channels_helper, BytesIO(i.data), file_name=i.file_name)
+                    file_id = file.video.file_id
+                else:
+                    file = await bot.send_photo(config.channels_helper, BytesIO(i.data))
+                    file_id = file.photo.file_id
+                return file_id
+            except FloodWait as exc:
+                wait_seconds = int(exc.value) + 1
+                logger.warning(
+                    "post 插件 get_file_id 触发 FloodWait, 等待 %s 秒后重试 (第 %s/%s 次)",
+                    wait_seconds,
+                    attempt + 1,
+                    max_retries,
+                )
+                await asyncio.sleep(wait_seconds)
+        logger.warning("post 插件 get_file_id 达到最大重试次数仍然失败 url[%s]", i.url)
+        return None
+
+    async def prepare_photos(self, photos: list[PhotoType], post_images: list[ArtworkImage]):
+        new_photos, input_photos, input_documents = [], [], []
+        photos_map = {i.src: i for i in photos}
+        url_map: dict[str, list[ArtworkImage]] = OrderedDict()
+        for i in post_images:
+            url_map.setdefault(i.url, []).append(i)
+            file_id = await self.get_file_id(i)
+            if file_id:
+                i.file_id = file_id
+        for k, v in url_map.items():
+            photo = photos_map.get(k)
+            if not photo:
+                continue
+            for t in v:
+                file_id = t.file_id
+                if not file_id:
+                    continue
+                file = FileId.decode(file_id)
+                if not file:
+                    continue
+                new_photo = PhotoType(
+                    id=file.media_id,
+                    src=photo.src,
+                    block=photo.block,
+                    is_gif=t.is_gif,
+                    is_video=t.is_video,
+                )
+                new_photos.append(new_photo)
+                if t.is_gif or t.is_video:
+                    d = InputDocument(
+                        id=file.media_id, access_hash=file.access_hash, file_reference=file.file_reference
+                    )
+                    input_documents.append(d)
+                else:
+                    p = InputPhoto(id=file.media_id, access_hash=file.access_hash, file_reference=file.file_reference)
+                    input_photos.append(p)
+        return new_photos, input_photos, input_documents
+
+    async def fetch_post_data(self, post_id: int, post_type: "PostTypeEnum") -> "FetchedPostData":
         """获取文章数据的核心函数，可被自动推送和手动推送共用"""
         bbs = self.get_bbs_client(post_type)
         post_info = await bbs.get_post_info(self.gids[0], post_id)
@@ -428,112 +534,185 @@ class Post(Plugin.Conversation):
         post_images = await self.gif_to_mp4(post_images)
         post_data = post_info["post"]["post"]
         post_subject = post_data["subject"]
-        post_tags = self.get_tags_by_subject(post_subject)
+        post_subject_re = post_subject + post_info.user_nickname
+        post_tags = self.get_tags_by_subject(post_subject_re)
+        url = post_info.get_url()
+
+        blocks, photos = json_to_blocks(post_info.structured_content)
+        async with self.send_lock:  # 使用锁确保函数无法并发执行
+            new_photos, input_photos, input_documents = await self.prepare_photos(photos, post_images)
+        blocks.add_title(post_subject)
+        blocks.fix_photo_block(new_photos)
+        blocks.ignore_invalid_photo_block()
+        blocks.merge_adjacent_photo_blocks()
+
+        rich = InputRichMessage(blocks=blocks, photos=input_photos or None, documents=input_documents or None)
+
+        # 旧版推送需要使用 BeautifulSoup 解析的纯文本 caption
         post_soup = BeautifulSoup(post_info.content, features="html.parser")
         post_text, too_long = self.parse_post_text(post_soup, post_subject)
-        url = post_info.get_url()
         max_len = MessageLimit.CAPTION_LENGTH - 100
         if too_long or len(post_text) >= max_len:
             post_text = self.safe_cut(post_text, max_len)
         post_text += f"\n\n[source]({url})"
-        post_text_caption = post_text + escape_markdown("".join([f" #{tag}" for tag in post_tags]), version=2)
-        return post_info, post_images, post_text, post_tags, post_text_caption, url
+        post_text_caption = post_text + "".join([f" #{tag}" for tag in post_tags])
+
+        return FetchedPostData(
+            post_info=post_info,
+            rich=rich,
+            post_tags=post_tags,
+            url=url,
+            post_subject=post_subject_re,
+            post_images=post_images,
+            post_text=post_text,
+            post_text_caption=post_text_caption,
+        )
 
     async def send_post_info(
         self, post_handler_data: PostHandlerData, message: "Message", post_id: int, post_type: "PostTypeEnum"
     ) -> int:
-        """手动推送流程"""
-        post_info, post_images, post_text, post_tags, post_text_caption, url = await self.fetch_post_data(
-            post_id, post_type
-        )
-        if post_info.video_urls:
-            await message.reply_text("检测到视频，需要单独下载，视频链接：" + "\n".join(post_info.video_urls))
+        """新版手动推送流程，使用 InputRichMessage"""
+        data = await self.fetch_post_data(post_id, post_type)
+        if data.post_info.video_urls:
+            await message.reply_text("检测到视频，需要单独下载，视频链接：" + "\n".join(data.post_info.video_urls))
         try:
             await self.send_post_images(
                 message.chat_id,
                 message.message_id,
-                post_images,
-                post_text_caption,
+                data.rich,
             )
-        except BadRequest as exc:
-            await message.reply_text(f"发送图片时发生错误 {exc.message}", reply_markup=ReplyKeyboardRemove())
-            logger.error("Post模块发送图片时发生错误 %s", exc.message)
+        except PyroBadRequest as exc:
+            await message.reply_text(f"发送图片时发生错误 {exc.value}", reply_markup=ReplyKeyboardRemove())
+            logger.error("Post模块发送图片时发生错误 %s", exc.value)
             return ConversationHandler.END
         except TypeError as exc:
             await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
             logger.error("Post模块发送图片时发生错误", exc_info=exc)
             return ConversationHandler.END
-        post_handler_data.post_text = post_text
-        post_handler_data.post_images = post_images
-        post_handler_data.delete_photo = []
-        post_handler_data.tags = post_tags
+        post_handler_data.url = data.url
+        post_handler_data.tags = data.post_tags
         post_handler_data.channel_id = -1
+        post_handler_data.rich = data.rich
+        # 旧版字段也准备好，方便用户后续切到旧版推送
+        post_handler_data.post_text = data.post_text
+        post_handler_data.post_text_caption = data.post_text_caption
+        post_handler_data.post_images = data.post_images
+        post_handler_data.delete_photo = []
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
+
+    async def send_post_info_old(
+        self, post_handler_data: PostHandlerData, message: "Message", post_id: int, post_type: "PostTypeEnum"
+    ) -> int:
+        """旧版手动推送流程，使用 send_media_group + MarkdownV2 文本"""
+        data = await self.fetch_post_data(post_id, post_type)
+        if data.post_info.video_urls:
+            await message.reply_text("检测到视频，需要单独下载，视频链接：" + "\n".join(data.post_info.video_urls))
+        try:
+            await self.send_post_old_images(
+                message.chat_id,
+                message.message_id,
+                data.post_images,
+                data.post_text_caption,
+            )
+        except PyroBadRequest as exc:
+            await message.reply_text(f"发送图片时发生错误 {exc.value}", reply_markup=ReplyKeyboardRemove())
+            logger.error("Post模块（旧版）发送图片时发生错误 %s", exc.value)
+            return ConversationHandler.END
+        except TypeError as exc:
+            await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
+            logger.error("Post模块（旧版）发送图片时发生错误", exc_info=exc)
+            return ConversationHandler.END
+        post_handler_data.url = data.url
+        post_handler_data.tags = data.post_tags
+        post_handler_data.post_text = data.post_text
+        post_handler_data.post_text_caption = data.post_text_caption
+        post_handler_data.post_images = data.post_images
+        post_handler_data.delete_photo = []
+        post_handler_data.old_channel_id = -1
+        await message.reply_text("请选择你的操作", reply_markup=self.MENU_OLD_KEYBOARD)
+        return CHECK_COMMAND_OLD
 
     async def send_post_images(
         self,
         chat_id: int,
         reply_id: Optional[int],
-        post_images: list,
+        rich,
+    ):
+        bot = self.mtp.client
+        peer = await bot.resolve_peer(chat_id)
+        await bot.invoke(
+            SendMessage(
+                peer=peer,
+                message="",
+                random_id=bot.rnd_id(),
+                rich_message=rich,
+            )
+        )
+
+    @staticmethod
+    def _build_pyrogram_media(post_images: List["ArtworkImage"]):
+        """根据 ArtworkImage 的 file_id 构造 pyrogram 的 InputMedia 列表。
+
+        ``prepare_photos`` 阶段已经将每张图片上传到辅助频道并把 ``file_id`` 写回
+        ``ArtworkImage.file_id``，因此这里直接使用 ``file_id`` 即可，规避重复上传。
+        """
+        media = []
+        for img in post_images:
+            if img.is_error:
+                continue
+            if img.is_gif or img.is_video:
+                media.append(InputMediaVideo(media=img.file_id, file_name=img.file_name))
+            else:
+                media.append(InputMediaPhoto(media=img.file_id))
+        return media
+
+    async def send_post_old_images(
+        self,
+        chat_id: int,
+        reply_id: Optional[int],
+        post_images: List["ArtworkImage"],
         post_text_caption: str,
     ):
-        bot = self.application.bot
-        async with self.send_lock:  # 使用锁确保函数无法并发执行
-            if len(post_images) > 1:
-                media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
+        """旧版推送：使用 pyrogram.send_media_group + 纯文本 caption。
+
+        多于 10 张时按 10 张一组发送，caption 放在最后一组第一项。
+        """
+        bot: "Client" = self.mtp.client
+        async with self.send_lock:  # 与新版共享同一把锁，避免同一时间重复上传
+            media = self._build_pyrogram_media(post_images)
+            if not media:
+                # 没有可用图片，直接发送纯文本
+                await bot.send_message(chat_id, post_text_caption[: MessageLimit.TEXT_LENGTH])
+                return
+            if len(media) > 1:
                 index = (math.ceil(len(media) / 10) - 1) * 10
                 media[index].caption = post_text_caption
-                media[index].parse_mode = ParseMode.MARKDOWN_V2
-                for group in ArkoWrapper(media).group(10):  # 每 10 张图片分一个组
+                for group in ArkoWrapper(media).group(10):
                     await bot.send_media_group(
                         chat_id,
                         list(group),
-                        write_timeout=len(group) * 10,
-                        reply_to_message_id=reply_id,
-                    )
-            elif len(post_images) == 1:
-                image = post_images[0]
-                if image.is_video:
-                    await bot.send_video(
-                        chat_id,
-                        image.data,
-                        caption=post_text_caption,
-                        parse_mode=ParseMode.MARKDOWN_V2,
-                        reply_to_message_id=reply_id,
-                    )
-                elif image.is_gif:
-                    await bot.send_animation(
-                        chat_id,
-                        image.data,
-                        caption=post_text_caption,
-                        parse_mode=ParseMode.MARKDOWN_V2,
-                        reply_to_message_id=reply_id,
-                    )
-                else:
-                    await bot.send_photo(
-                        chat_id,
-                        image.data,
-                        caption=post_text_caption,
-                        parse_mode=ParseMode.MARKDOWN_V2,
                         reply_to_message_id=reply_id,
                     )
             else:
-                await bot.send_message(
-                    chat_id,
-                    post_text_caption,
-                    parse_mode=ParseMode.MARKDOWN_V2,
-                    reply_to_message_id=reply_id,
-                )
+                image = post_images[0]
+                caption = post_text_caption[: MessageLimit.CAPTION_LENGTH]
+                if image.is_video:
+                    await bot.send_video(chat_id, image.file_id, caption=caption, reply_to_message_id=reply_id)
+                elif image.is_gif:
+                    await bot.send_animation(chat_id, image.file_id, caption=caption, reply_to_message_id=reply_id)
+                else:
+                    await bot.send_photo(chat_id, image.file_id, caption=caption, reply_to_message_id=reply_id)
 
     @staticmethod
-    def get_channel_id_by_post_text(post_text: str) -> int:
+    def get_channel_id_by_post_text(post_text: str) -> tuple[int, int]:
+        index = 0
         if not config.channels:
-            return 0
-        channel_id = config.channels[0]
+            return 0, index
         if "千星奇域" in post_text and len(config.channels) > 1:
-            channel_id = config.channels[1]
-        return channel_id
+            index = 1
+        channel_id = config.channels[index]
+        return channel_id, index
 
     async def get_chat_username(self, chat_id: int) -> str:
         group = await self.group_service.get_group_by_id(chat_id)
@@ -547,28 +726,49 @@ class Post(Plugin.Conversation):
         return chat.username
 
     async def auto_send_post(self, post_id: int, post_type: "PostTypeEnum") -> bool:
-        """自动推送流程"""
+        """自动推送流程：先 get_file_id，再同时发送新版 rich 与旧版 media_group。
+
+        新版频道 ID 通过 ``post_config.new_channels`` 控制；若该列表为空则跳过
+        新版推送。旧版频道 ID 来自 ``config.channels``，与旧版插件行为一致。
+        """
         try:
-            # 1. 获取文章数据
-            post_info, post_images, post_text, post_tags, post_text_caption, url = await self.fetch_post_data(
-                post_id, post_type
-            )
+            # 1. 获取文章数据（已包含 file_id 上传、rich、旧版文本等）
+            data = await self.fetch_post_data(post_id, post_type)
 
-            # 2. 自动选择频道
-            channel_id = self.get_channel_id_by_post_text(post_text)
-            channel_name = await self.get_chat_username(channel_id)
+            # 2. 自动选择旧版频道
+            old_channel_id, old_channel_index = self.get_channel_id_by_post_text(data.post_subject)
+            old_channel_name = await self.get_chat_username(old_channel_id)
 
-            # 3. 准备推送内容
-            post_text_final = post_text + f" @{escape_markdown(channel_name, version=2)}"
-            for tag in post_tags:
-                post_text_final += f" \#{tag}"
+            # 3. 准备旧版推送文本（拼接频道与 tag）
+            old_caption = data.post_text_caption
+            if old_channel_name:
+                old_caption += f" @{old_channel_name}"
+            for tag in data.post_tags:
+                old_caption += f" #{tag}"
 
-            # 4. 执行推送
-            await self.send_post_images(channel_id, None, post_images, post_text_final)
+            # 4. 旧版推送（必须执行）
+            await self.send_post_old_images(old_channel_id, None, data.post_images, old_caption)
+
+            # 5. 新版推送（仅在 new_channels 中存在时执行）
+            new_channel_ids = post_config.new_channels or []
+            if len(new_channel_ids) > old_channel_index:
+                new_channel_id = new_channel_ids[old_channel_index]
+                new_channel_name = await self.get_chat_username(new_channel_id)
+                data.rich.blocks.add_source_and_tags(data.url, new_channel_name, data.post_tags)
+                try:
+                    await self.send_post_images(new_channel_id, None, data.rich)
+                    logger.info("自动推送新版文章成功 post_id[%s] channel[%s]", post_id, new_channel_id)
+                except (PyroBadRequest, TypeError) as exc:
+                    logger.error(
+                        "自动推送新版文章失败 post_id[%s] channel[%s] %s",
+                        post_id,
+                        new_channel_id,
+                        getattr(exc, "value", exc),
+                    )
             logger.info("自动推送文章成功 post_id[%s]", post_id)
             return True
-        except BadRequest as exc:
-            logger.error("自动推送时发送图片发生错误 %s", exc.message)
+        except PyroBadRequest as exc:
+            logger.error("自动推送时发送图片发生错误 %s", exc.value)
             return False
         except Exception as exc:
             logger.error("自动推送文章时发生错误", exc_info=exc)
@@ -585,45 +785,7 @@ class Post(Plugin.Conversation):
             return await self.get_channel(update, context)
         if message.text == "添加TAG":
             return await self.add_tags(update, context)
-        if message.text == "编辑文字":
-            return await self.edit_text(update, context)
-        if message.text == "删除图片":
-            return await self.delete_photo(update, context)
-        if message.text == "添加视频":
-            return await self.add_video(update, context)
         return ConversationHandler.END
-
-    @staticmethod
-    async def delete_photo(update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
-        post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
-        photo_len = len(post_handler_data.post_images)
-        message = update.effective_message
-        await message.reply_text(
-            "请回复你要删除的图片的序列，从1开始，如果删除多张图片回复的序列请以空格作为分隔符，"
-            f"当前一共有 {photo_len} 张图片"
-        )
-        return GTE_DELETE_PHOTO
-
-    @conversation.state(state=GTE_DELETE_PHOTO)
-    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def get_delete_photo(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
-        post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
-        photo_len = len(post_handler_data.post_images)
-        message = update.effective_message
-        args = message.text.split(" ")
-        index: List[int] = []
-        try:
-            for temp in args:
-                if int(temp) > photo_len:
-                    raise ValueError
-                index.append(int(temp))
-        except ValueError:
-            await message.reply_text("数据不合法，请重新操作")
-            return GTE_DELETE_PHOTO
-        post_handler_data.delete_photo = index
-        await message.reply_text("删除成功")
-        await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
-        return CHECK_COMMAND
 
     async def get_channel(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
         message = update.effective_message
@@ -682,39 +844,6 @@ class Post(Plugin.Conversation):
         await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
         return CHECK_COMMAND
 
-    @staticmethod
-    async def edit_text(update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
-        message = update.effective_message
-        await message.reply_text("请回复替换的文本")
-        return GET_TEXT
-
-    @conversation.state(state=GET_TEXT)
-    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
-    async def get_edit_text(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
-        post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
-        message = update.effective_message
-        post_handler_data.post_text = message.text_markdown_v2
-        await message.reply_text("替换成功")
-        await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
-        return CHECK_COMMAND
-
-    @staticmethod
-    async def add_video(update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
-        message = update.effective_message
-        await message.reply_text("请回复添加的视频")
-        return GET_VIDEO
-
-    @conversation.state(state=GET_VIDEO)
-    @handler.message(filters=filters.VIDEO & ~filters.COMMAND, block=False)
-    async def get_add_video(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
-        post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
-        message = update.effective_message
-        video = message.video
-        post_handler_data.post_images.insert(0, ArtworkImage(art_id=114514, file_name=video.file_id))
-        await message.reply_text("插入视频成功")
-        await message.reply_text("请选择你的操作", reply_markup=self.MENU_KEYBOARD)
-        return CHECK_COMMAND
-
     @conversation.state(state=SEND_POST)
     @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
     async def send_post(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
@@ -724,6 +853,9 @@ class Post(Plugin.Conversation):
             await message.reply_text(text="退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
         await message.reply_text("正在推送", reply_markup=ReplyKeyboardRemove())
+        blocks: BlockList = post_handler_data.rich.blocks
+        url = post_handler_data.url
+        post_tags = post_handler_data.tags
         channel_id = post_handler_data.channel_id
         channel_name = None
         try:
@@ -735,47 +867,117 @@ class Post(Plugin.Conversation):
             logger.exception(exc)
             await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
             return ConversationHandler.END
+        blocks.add_source_and_tags(url, channel_name, post_tags)
+        try:
+            await self.send_post_images(channel_id, None, post_handler_data.rich)
+        except PyroBadRequest as exc:
+            await message.reply_text(f"发送图片时发生错误 {exc.value}", reply_markup=ReplyKeyboardRemove())
+            logger.error("Post模块发送图片时发生错误 %s", exc.value)
+            return ConversationHandler.END
+        except TypeError as exc:
+            await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
+            logger.error("Post模块发送图片时发生错误", exc_info=exc)
+        await message.reply_text("推送成功", reply_markup=ReplyKeyboardRemove())
+        return ConversationHandler.END
+
+    # ------------------------------------------------------------------
+    # 旧版推送对话（/post_old）
+    # ------------------------------------------------------------------
+    @conversation.state(state=CHECK_COMMAND_OLD)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
+    async def check_command_old(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+        message = update.effective_message
+        if message.text == "退出":
+            await message.reply_text("退出任务", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        if message.text == "推送频道":
+            return await self.get_channel_old(update, context)
+        if message.text == "添加TAG":
+            return await self.add_tags_old(update, context)
+        return ConversationHandler.END
+
+    async def get_channel_old(self, update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
+        message = update.effective_message
+        reply_keyboard = []
+        try:
+            for channel_id in config.channels:
+                username = await self.get_chat_username(chat_id=channel_id)
+                reply_keyboard.append([f"{username}"])
+        except KeyError as error:
+            logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=error)
+            await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        await message.reply_text("请选择你要推送的频道", reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
+        return GET_POST_CHANNEL_OLD
+
+    @conversation.state(state=GET_POST_CHANNEL_OLD)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
+    async def get_post_channel_old(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+        post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
+        message = update.effective_message
+        channel_id = -1
+        try:
+            for channel_chat_id in config.channels:
+                username = await self.get_chat_username(chat_id=channel_chat_id)
+                if message.text == username:
+                    channel_id = channel_chat_id
+        except KeyError as exc:
+            logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=exc)
+            logger.exception(exc)
+            await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        if channel_id == -1:
+            await message.reply_text("获取频道信息失败，请检查你输入的内容是否正确", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        post_handler_data.old_channel_id = channel_id
+        reply_keyboard = [["确认", "退出"]]
+        await message.reply_text("请核对你修改的信息", reply_markup=ReplyKeyboardMarkup(reply_keyboard, True, True))
+        return SEND_POST_OLD
+
+    @staticmethod
+    async def add_tags_old(update: "Update", _: "ContextTypes.DEFAULT_TYPE") -> int:
+        message = update.effective_message
+        await message.reply_text(
+            "请回复添加的tag名称，如果要添加多个tag请以空格作为分隔符，不用添加 # 作为开头，推送时程序会自动添加"
+        )
+        return GET_TAGS
+
+    @conversation.state(state=SEND_POST_OLD)
+    @handler.message(filters=filters.TEXT & ~filters.COMMAND, block=False)
+    async def send_post_old(self, update: "Update", context: "ContextTypes.DEFAULT_TYPE") -> int:
+        post_handler_data: PostHandlerData = context.chat_data.get("post_handler_data")
+        message = update.effective_message
+        if message.text == "退出":
+            await message.reply_text(text="退出任务", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
+        await message.reply_text("正在推送", reply_markup=ReplyKeyboardRemove())
+        channel_id = post_handler_data.old_channel_id
+        channel_name = None
+        try:
+            for channel_info in config.channels:
+                if channel_id == channel_info:
+                    channel_name = await self.get_chat_username(chat_id=channel_id)
+        except KeyError as exc:
+            logger.error("从配置文件获取频道信息发生错误，退出任务", exc_info=exc)
+            logger.exception(exc)
+            await message.reply_text("从配置文件获取频道信息发生错误，退出任务", reply_markup=ReplyKeyboardRemove())
+            return ConversationHandler.END
         post_text = post_handler_data.post_text
         post_images = []
         for index, _ in enumerate(post_handler_data.post_images):
             if index + 1 not in post_handler_data.delete_photo:
                 post_images.append(post_handler_data.post_images[index])
-        post_text += f" @{escape_markdown(channel_name, version=2)}"
+        post_text += f" @{channel_name}"
         for tag in post_handler_data.tags:
-            post_text += f" \\#{tag}"
+            post_text += f" #{tag}"
         try:
-            if len(post_images) > 1:
-                media = [self.input_media(img_info) for img_info in post_images if not img_info.is_error]
-                index = (math.ceil(len(media) / 10) - 1) * 10
-                media[index].caption = post_text
-                media[index].parse_mode = ParseMode.MARKDOWN_V2
-                for group in ArkoWrapper(media).group(10):  # 每 10 张图片分一个组
-                    await context.bot.send_media_group(channel_id, media=list(group), write_timeout=len(group) * 5)
-            elif len(post_images) == 1:
-                image = post_images[0]
-                if image.is_video:
-                    await context.bot.send_video(
-                        channel_id, image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2
-                    )
-                elif image.is_gif:
-                    await context.bot.send_animation(
-                        channel_id, image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2
-                    )
-                else:
-                    await context.bot.send_photo(
-                        channel_id, image.data, caption=post_text, parse_mode=ParseMode.MARKDOWN_V2
-                    )
-            elif not post_images:
-                await context.bot.send_message(channel_id, post_text, parse_mode=ParseMode.MARKDOWN_V2)
-            else:
-                await message.reply_text("图片获取错误", reply_markup=ReplyKeyboardRemove())  # excuse?
-                return ConversationHandler.END
-        except BadRequest as exc:
-            await message.reply_text(f"发送图片时发生错误 {exc.message}", reply_markup=ReplyKeyboardRemove())
-            logger.error("Post模块发送图片时发生错误 %s", exc.message)
+            await self.send_post_old_images(channel_id, None, post_images, post_text)
+        except PyroBadRequest as exc:
+            await message.reply_text(f"发送图片时发生错误 {exc.value}", reply_markup=ReplyKeyboardRemove())
+            logger.error("Post模块（旧版）发送图片时发生错误 %s", exc.value)
             return ConversationHandler.END
         except TypeError as exc:
             await message.reply_text("发送图片时发生错误，错误信息已经写到日记", reply_markup=ReplyKeyboardRemove())
-            logger.error("Post模块发送图片时发生错误", exc_info=exc)
+            logger.error("Post模块（旧版）发送图片时发生错误", exc_info=exc)
         await message.reply_text("推送成功", reply_markup=ReplyKeyboardRemove())
         return ConversationHandler.END
