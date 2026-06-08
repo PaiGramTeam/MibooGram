@@ -32,6 +32,7 @@ class ArtworkImage(BaseModel):
     file_extension: Optional[str] = None
     is_error: bool = False
     url: str = ""
+    file_id: Optional[str] = None
 
     @property
     def is_video(self) -> bool:
@@ -122,10 +123,12 @@ class PostInfo(PostRecommend):
     _data: dict = PrivateAttr()
 
     user_uid: int
+    user_nickname: str
     image_urls: List[str]
     created_at: int
     video_urls: List[str]
     content: str
+    structured_content: List[Dict]
 
     def __init__(self, _data: dict, **data: Any):
         super().__init__(**data)
@@ -168,9 +171,13 @@ class PostInfo(PostRecommend):
         created_at = post["created_at"]
         user = _data_post["user"]  # 用户数据
         user_uid = user["uid"]  # 用户ID
+        user_nickname = user.get("nickname", "")
         content = post["content"]
-        if hoyolab and ("<" not in content) and (structured_content := post.get("structured_content")):
-            content = PostInfo.parse_structured_content(ujson.loads(structured_content))
+        structured_content = []
+        if structured_content_raw := post.get("structured_content"):
+            structured_content = ujson.loads(structured_content_raw)
+        if hoyolab and ("<" not in content) and structured_content:
+            content = PostInfo.parse_structured_content(structured_content)
         if hoyolab and post["view_type"] == 5:
             # video
             content = ujson.loads(content).get("describe", "")
@@ -180,11 +187,13 @@ class PostInfo(PostRecommend):
             hoyolab=hoyolab,
             post_id=post_id,
             user_uid=user_uid,
+            user_nickname=user_nickname,
             subject=subject,
             image_urls=image_urls,
             video_urls=video_urls,
             created_at=created_at,
             content=content,
+            structured_content=structured_content,
         )
 
     def __getitem__(self, item):

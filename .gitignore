@@ -160,3 +160,5 @@ paigram.session-journal
 docker-compose.yml
 
 core/dependence/assets/
+
+unknown_errors.txt
