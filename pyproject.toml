@@ -47,20 +47,18 @@ dependencies = [
     "influxdb-client[async,ciso]>=1.48.0",
     "pydantic>=2.0.0,<3.0.0",
     "pydantic-settings>=2.6.1",
+    "PyroTgCrypto<2.0.0,>=1.2.7",
+    "pyrogram",
 ]
 requires-python = "<4.0,>=3.10"
 readme = "README.md"
 license = {text = "AGPL-3.0"}
 
 [project.optional-dependencies]
-pyro = ["PyroTgCrypto<2.0.0,>=1.2.7", "Pyrogram @ git+https://github.com/TeamPGM/pyrogram"]
 test = ["pytest<10.0.0,>=9.0.0", "pytest-asyncio<2.0.0,>=1.0.0", "flaky<4.0.0,>=3.7.0"]
 
-[tool.pdm]
-distribution = false
-
-[tool.pdm.build]
-includes = []
+[tool.uv.sources]
+pyrogram = { git = "https://github.com/TeamPGM/pyrogram" }
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
