@@ -5,6 +5,7 @@ from simnet.models.zzz.chronicle.hadal import ZZZHadalInfo
 from simnet.models.zzz.diary import ZZZDiary
 from simnet.models.zzz.chronicle.challenge import ZZZChallenge
 from simnet.models.zzz.chronicle.challenge_mem import ZZZChallengeMem
+from simnet.models.zzz.chronicle.holo_boss_detail import ZZZHoloBossDetail
 
 from core.services.history_data.models import (
     HistoryData,
@@ -13,6 +14,7 @@ from core.services.history_data.models import (
     HistoryDataLedger,
     HistoryDataChallengeMem,
     HistoryDataChallengeHadal,
+    HistoryDataChallengeHolo,
 )
 from gram_core.base_service import BaseService
 from gram_core.services.history_data.services import HistoryDataBaseServices
@@ -29,6 +31,7 @@ __all__ = (
     "HistoryDataChallengeMemServices",
     "HistoryDataLedgerServices",
     "HistoryDataChallengeHadalServices",
+    "HistoryDataChallengeHoloServices",
 )
 
 
@@ -119,5 +122,34 @@ class HistoryDataChallengeHadalServices(BaseService, HistoryDataBaseServices):
             data_id=abyss_data.hadal_info_v2.season,
             time_created=datetime.datetime.now(),
             type=HistoryDataChallengeHadalServices.DATA_TYPE,
+            data=jsonlib.loads(json_data),
+        )
+
+
+class HistoryDataChallengeHoloServices(BaseService, HistoryDataBaseServices):
+    DATA_TYPE = HistoryDataTypeEnum.CHALLENGE_HOLO.value
+
+    @staticmethod
+    def exists_data(data: HistoryData, old_data: List[HistoryData]) -> bool:
+
+        def _get_data(_data: HistoryData):
+            info = _data.data.get("abyss_data", {}).get("list")
+            _avatars = []
+            for i in info:
+                _avatars.extend(i.get("avatar_list", []))
+            return _avatars
+
+        avatars = _get_data(data)
+        return any(_get_data(d) == avatars for d in old_data)
+
+    @staticmethod
+    def create(user_id: int, abyss_data: ZZZHoloBossDetail):
+        data = HistoryDataChallengeHolo(abyss_data=abyss_data)
+        json_data = data.model_dump_json(by_alias=True)
+        return HistoryData(
+            user_id=user_id,
+            data_id=abyss_data.season,
+            time_created=datetime.datetime.now(),
+            type=HistoryDataChallengeHoloServices.DATA_TYPE,
             data=jsonlib.loads(json_data),
         )

@@ -1,0 +1,51 @@
+{% set boss = data.floor.boss %}
+ <div class="floors">
+        <div class="floor floor-mem" style="display: flex">
+            <div class="head" style="flex: 1">
+                <div style="margin: 80px;">
+                    <div>
+                        <img src="{{ boss.icon }}" style="width: 200px; width: 140px;">
+                    </div>
+                </div>
+            </div>
+            <div class="chamber" style="flex: 2">
+                <div class="chamber-info" style="display: block; height: auto">
+                    <div style="padding: 20px">
+                        <span>{{ boss.name }}</span>
+                    </div>
+                    <div style="padding: 10px;">
+                        <span>排名：</span>
+                        <span style="color: yellowgreen">{{ data.floor.rank / 100 }}%</span>
+                        <div class="star">
+                            {% for _ in range(data.floor.star) %}
+                            <div class="icon icon2 starL"></div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div style="margin: 10px">
+                        <span style="color: white;">通关用时：{{ data.floor_time }}</span>
+                    </div>
+                </div>
+                <div class="battles">
+                    <div class="battle">
+                        {% for character in data.floor.avatar_list %}
+                            <div class="character character-holo">
+                                {% if character.rank > 0 %}
+                                    {% set constellation = character.rank %}
+                                    {% set bg = ['blue', 'blue', 'green', 'green', 'red', 'red'][constellation - 1] %}
+                                    <div style="background-color: var(--{{ bg }})">
+                                        {{ constellation }} 命
+                                    </div>
+                                {% endif %}
+                                <div class="element" style="background-image: url('../../img/attribute/{{ character.element_type }}.png')"></div>
+                                <div class="icon"
+                                     style="background-image: url('../../background/rarity/half/{{ character.rarity }}.png')">
+                                    <img src="{{ character_icons[character.id] }}" alt=""/>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+ </div>

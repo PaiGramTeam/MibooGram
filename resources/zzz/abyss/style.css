@@ -61,6 +61,10 @@ body {
     background-image: linear-gradient(to top, rgb(0 0 0 / 10%), rgb(0 0 0 / 10%)), url("./background/page-bg-pc.png");
 }
 
+.overview-holo {
+    background-image: linear-gradient(to top, rgb(0 0 0 / 10%), rgb(0 0 0 / 10%)), url("./background/page-bg-block.png");
+}
+
 .summarize {
     font-size: 30px;
     width: calc(100% - 90px);
@@ -366,6 +370,10 @@ body {
     flex: 2;
     max-width: 120px;
     height: 180px;
+}
+
+.battle > .character-holo {
+    height: 145px;
 }
 
 .battle > .battle-info {

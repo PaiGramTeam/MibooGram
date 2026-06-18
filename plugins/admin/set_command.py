@@ -62,6 +62,8 @@ class SetCommandPlugin(Plugin):
             BotCommand("challenge_history_v1", "旧版防卫战历史信息查询"),
             BotCommand("challenge_mem", "危局强袭战信息查询"),
             BotCommand("challenge_mem_history", "危局强袭战历史信息查询"),
+            BotCommand("challenge_holo", "拟境湮灭战信息查询"),
+            BotCommand("challenge_holo_history", "拟境湮灭战历史信息查询"),
             # UID 查询类
             BotCommand("stats", "玩家统计查询"),
         ]

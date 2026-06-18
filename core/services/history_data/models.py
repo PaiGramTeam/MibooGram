@@ -5,6 +5,7 @@ from simnet.models.zzz.chronicle.hadal import ZZZHadalInfo
 from simnet.models.zzz.diary import ZZZDiary
 from simnet.models.zzz.chronicle.challenge import ZZZChallenge
 from simnet.models.zzz.chronicle.challenge_mem import ZZZChallengeMem
+from simnet.models.zzz.chronicle.holo_boss_detail import ZZZHoloBossDetail
 
 from gram_core.services.history_data.models import HistoryData
 
@@ -15,6 +16,7 @@ __all__ = (
     "HistoryDataChallengeMem",
     "HistoryDataLedger",
     "HistoryDataChallengeHadal",
+    "HistoryDataChallengeHolo",
 )
 
 
@@ -23,6 +25,7 @@ class HistoryDataTypeEnum(int, enum.Enum):
     CHALLENGE_STORY = 1  # 虚构叙事
     LEDGER = 2  # 开拓月历
     CHALLENGE_BOSS = 3  # 末日幻影
+    CHALLENGE_HOLO = 4  # 拟境湮灭战
 
 
 class HistoryDataAbyss(BaseModel):
@@ -54,4 +57,12 @@ class HistoryDataChallengeHadal(BaseModel):
 
     @classmethod
     def from_data(cls, data: HistoryData) -> "HistoryDataChallengeHadal":
+        return cls.model_validate(data.data)
+
+
+class HistoryDataChallengeHolo(BaseModel):
+    abyss_data: ZZZHoloBossDetail
+
+    @classmethod
+    def from_data(cls, data: HistoryData) -> "HistoryDataChallengeHolo":
         return cls.model_validate(data.data)
