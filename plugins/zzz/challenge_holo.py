@@ -219,6 +219,8 @@ class ChallengeHoloPlugin(Plugin):
             for ch in floor_data.avatar_list:
                 character_icons[ch.id] = self.assets_service.avatar.square(ch.id).as_uri()
             t = floor_data.challenge_time
+            if t is None:
+                continue
             floors.append(
                 {
                     "floor": floor_data,
