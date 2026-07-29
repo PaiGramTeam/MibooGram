@@ -3,7 +3,12 @@ from typing import List, Tuple, Union, Optional, TYPE_CHECKING, Dict
 
 from pydantic import BaseModel
 from simnet import ZZZClient
-from simnet.models.zzz.calculator import ZZZCalculatorCharacterDetails, ZZZCalculatorCharacter
+from simnet.models.zzz.calculator import (
+    ZZZCalculatorCharacterDetails,
+    ZZZCalculatorCharacter,
+    ZZZCalculatorCharacterEquipPlanInfo,
+    ZZZCalculatorEquipment,
+)
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.constants import ChatAction
 from telegram.ext import filters
@@ -269,23 +274,17 @@ class PlayerCards(Plugin):
 
 
 class Artifact(BaseModel, frozen=False):
-    tid: int = 0
-    # ID
-    equipment: Dict = {}
-    # 圣遗物评分
-    score: float = 0
-    # 圣遗物评级
-    score_label: str = "E"
-    # 圣遗物评级颜色
-    score_class: str = ""
-    # 副词条分数
-    substat_scores: List[float] = []
+    """在 ZZZCalculatorEquipment 基础上扩展了遗器评分数据"""
 
-    def set_score(self, result: "Score"):
-        self.score = result.score
-        self.score_label = result.rating
-        self.score_class = self.get_score_class(result.rating)
-        self.substat_scores = result.sub_stat_score
+    equipment: ZZZCalculatorEquipment
+    # 遗器评分
+    score: float = 0
+    # 遗器评级
+    score_label: str = "E"
+    # 遗器评级颜色
+    score_class: str = ""
+    # 是否为有效词条
+    valid_properties: List[bool] = []
 
     @staticmethod
     def get_score_class(label: str) -> str:
@@ -323,33 +322,42 @@ class RenderTemplate:
     async def render(self):
         images = await self.cache_images()
 
-        artifact_total_score: float = 0
-        artifact_total_score_label = "N/A"
-        artifacts = list(self.character.equip_map.values())
+        equip_plan_info = self.character.equip_plan_info
+        artifacts, valid_total = self.find_artifacts(equip_plan_info)
+        artifact_total_score: float = sum(artifact.score for artifact in artifacts)
+        artifact_total_score = round(artifact_total_score, 1)
+        artifact_total_score_label: str = equip_plan_info.equip_rating or "E"
+        artifact_total_score_class: str = Artifact.get_score_class(artifact_total_score_label)
+        # 评分规则: 1=官方规则 3=用户自定义规则
+        score_rule_type = equip_plan_info.type
+        # 全部有效词条名称列表
+        valid_property_names = [prop.name for prop in equip_plan_info.plan_effective_property_list]
 
-        weapon = None
-        weapon_detail = None
-        if self.character.weapon and self.character.weapon.id:
-            weapon = self.character.weapon
-            weapon_detail = self.wiki_service.weapon.get_by_id(self.character.weapon.id)
-        skills = [0, 0, 0, 0, 0, 0]
         skills_map = [0, 2, 5, 1, 3, 4]
-        for index in range(6):
-            skills[index] = self.character.skills[skills_map[index]].level
         data = {
             "uid": mask_number(self.uid),
             "character": self.character,
             "character_detail": self.wiki_service.character.get_by_id(self.character.id),
-            "weapon": weapon,
-            "weapon_detail": weapon_detail,
-            # 圣遗物评分
+            "weapon": self.character.weapon if self.character.weapon and self.character.weapon.id else None,
+            "weapon_detail": (
+                self.wiki_service.weapon.get_by_id(self.character.weapon.id)
+                if self.character.weapon and self.character.weapon.id
+                else None
+            ),
+            # 遗器评分
             "artifact_total_score": artifact_total_score,
-            # 圣遗物评级
+            # 遗器评级
             "artifact_total_score_label": artifact_total_score_label,
-            # 圣遗物评级颜色
-            "artifact_total_score_class": Artifact.get_score_class(artifact_total_score_label),
+            # 遗器评级颜色
+            "artifact_total_score_class": artifact_total_score_class,
+            # 有效词条数
+            "valid_property_cnt": valid_total,
+            # 全部有效词条名称
+            "valid_property_names": valid_property_names,
+            # 评分规则类型: 1=官方 3=自定义
+            "score_rule_type": score_rule_type,
             "artifacts": artifacts,
-            "skills": skills,
+            "skills": [self.character.skills[skills_map[index]].level for index in range(6)],
             "images": images,
         }
 
@@ -374,3 +382,31 @@ class RenderTemplate:
         if c.weapon and c.weapon.id:
             data["equipment"] = self.assets_service.weapon.icon(c.weapon.id).as_uri()
         return data
+
+    def find_artifacts(self, equip_plan_info: ZZZCalculatorCharacterEquipPlanInfo) -> Tuple[List["Artifact"], int]:
+        """根据 equip_plan_info 构造带评分的遗器列表，并统计有效词条数"""
+        effective_property_ids = {prop.id for prop in equip_plan_info.plan_effective_property_list}
+        valid_total = equip_plan_info.valid_property_cnt
+        artifacts: List["Artifact"] = []
+        score_per_artifact = self._split_score(equip_plan_info.equip_rating_score, len(self.character.equip))
+        for index, equip in enumerate(self.character.equip):
+            valid_props = [
+                equip.properties[i].property_id in effective_property_ids for i in range(len(equip.properties))
+            ]
+            artifact = Artifact(
+                equipment=equip,
+                score=round(score_per_artifact[index], 1) if index < len(score_per_artifact) else 0,
+                score_label=equip_plan_info.equip_rating or "E",
+                score_class=Artifact.get_score_class(equip_plan_info.equip_rating or "E"),
+                valid_properties=valid_props,
+            )
+            artifacts.append(artifact)
+        return artifacts, valid_total
+
+    @staticmethod
+    def _split_score(total_score: float, count: int) -> List[float]:
+        """将总评分平均分配到每个遗器上"""
+        if count <= 0:
+            return []
+        base = total_score / count
+        return [base] * count

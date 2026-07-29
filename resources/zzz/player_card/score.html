@@ -1,12 +1,17 @@
-<div class="flex-1 flex justify-evenly bg-black bg-opacity-20 rounded-lg">
-  <div class="flex flex-col items-center justify-center space-y-2">
-    <div class="text-5xl italic text-shadow {{ artifact_total_score_class }}">
-      {{ artifact_total_score_label }}
+<div class="flex-1 flex items-center bg-black bg-opacity-20 rounded-lg px-4 py-3 space-x-4">
+  <div class="flex flex-col items-center justify-center min-w-32">
+    <div class="text-5xl italic text-shadow">{{ valid_property_cnt }}</div>
+    <div class="text-base text-neutral-400">有效词条数
+      <span class="text-xs">
+        {% if score_rule_type == 1 %}官方规则{% elif score_rule_type == 2 %}养成指南规则{% elif score_rule_type == 3 %}自定义规则{% endif %}
+      </span>
     </div>
-    <div class="text-base text-neutral-400">遗器评级</div>
   </div>
-  <div class="flex flex-col items-center justify-center space-y-2">
-    <div class="text-5xl italic text-shadow">{{ artifact_total_score }}</div>
-    <div class="text-base text-neutral-400">遗器评分</div>
+  <div class="flex-1 flex flex-wrap gap-2">
+    {% for name in valid_property_names %}
+    <div class="px-3 py-1 rounded bg-yellow-400 bg-opacity-20 text-yellow-400 text-base">
+      {{ name }}
+    </div>
+    {% endfor %}
   </div>
 </div>
