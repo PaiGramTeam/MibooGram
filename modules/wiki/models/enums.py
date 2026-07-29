@@ -18,6 +18,8 @@ class ZZZElementType(IntEnum):
     """ 风 """
     ETHER = 205
     """ 以太 """
+    LUMEN = 300
+    """ 流明 """
 
 
 class ZZZSpeciality(IntEnum):
