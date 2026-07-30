@@ -202,12 +202,23 @@ class ChallengeMemPlugin(Plugin):
         start_time = abyss_data.begin_time.datetime.strftime("%m月%d日 %H:%M")
         end_time = abyss_data.end_time.datetime.strftime("%m月%d日 %H:%M")
 
+        data_list = abyss_data.list
+        total_hard_scores, total_hard_stars = 0, 0
+        if abyss_data.has_hard and abyss_data.hard_list:
+            total_hard_scores = sum([i.score for i in abyss_data.hard_list])
+            total_hard_stars = sum([i.star for i in abyss_data.hard_list])
+            data_list = abyss_data.hard_list + data_list
+
         render_data = {
             "title": "危局强袭战",
             "start_time": start_time,
             "end_time": end_time,
             "stars": abyss_data.total_star,
             "scores": abyss_data.total_score,
+            "total_hard_scores": total_hard_scores,
+            "total_hard_stars": total_hard_stars,
+            "total_max_score": abyss_data.total_max_score,
+            "room_max_score": abyss_data.room_max_score,
             "uid": mask_number(uid),
             "abyss_data": abyss_data,
         }
@@ -216,7 +227,7 @@ class ChallengeMemPlugin(Plugin):
         character_icons = {}
         buddy_icons = {}
 
-        for floor_data in abyss_data.list:
+        for floor_data in data_list:
             for ch in floor_data.avatar_list:
                 character_icons[ch.id] = self.assets_service.avatar.square(ch.id).as_uri()
             if bu := floor_data.buddy:
@@ -224,13 +235,14 @@ class ChallengeMemPlugin(Plugin):
             floors.append(
                 {
                     "floor": floor_data,
+                    "is_hard": bool(abyss_data.hard_list) and floor_data in abyss_data.hard_list,
                     "floor_time": floor_data.challenge_time.datetime.strftime("%Y-%m-%d %H:%M:%S"),
                 }
             )
 
         render_data["character_icons"] = character_icons
         render_data["buddy_icons"] = buddy_icons
-        render_data["floors"] = floors[::-1]
+        render_data["floors"] = floors
 
         return await self.template_service.render(
             "zzz/abyss/mem.jinja2",

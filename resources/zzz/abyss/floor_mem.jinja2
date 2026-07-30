@@ -17,7 +17,7 @@
                         <span>分数：{{ data.floor.score }}</span>
                         <div class="star">
                             {% for _ in range(data.floor.star) %}
-                            <div class="icon icon2 starL"></div>
+                            <div class="icon icon2 {% if data.is_hard %}starHL{% else %}starL{% endif %}"></div>
                             {% endfor %}
                         </div>
                     </div>

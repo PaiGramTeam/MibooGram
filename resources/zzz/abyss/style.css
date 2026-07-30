@@ -130,6 +130,10 @@ body {
     background-image: url("background/star-icon.png");
 }
 
+.starHL, .starHL::before {
+    background-image: url("background/star-icon-hard.png");
+}
+
 .star > span {
     margin-left: 10px;
 }

@@ -44,6 +44,18 @@
                     <span>*{{ stars }}</span>
                 </div>
             </div>
+            {% if total_hard_scores != 0 %}
+            <div>
+                <div>
+                    <span>高难总分：{{ total_hard_scores }}</span>
+                    <span style="color: yellowgreen"> ~ {{ abyss_data.hard_rank_percent / 100.0 }} %</span>
+                </div>
+                <div class="star">
+                    <div class="icon icon2 starHL"></div>
+                    <span>*{{ total_hard_stars }}</span>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
         {% for data in floors %}
