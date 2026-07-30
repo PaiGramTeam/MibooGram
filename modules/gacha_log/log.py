@@ -318,6 +318,10 @@ class GachaLog(GachaLogOnlineView, GachaLogRanks, GachaLogUigfConverter):
     def check_avatar_up(name: str, gacha_time: datetime.datetime) -> bool:
         if name in {"莱卡恩", "猫又", "格莉丝", "丽娜", "「11号」", "珂蕾妲"}:
             return False
+        if name in {"柳", "凯撒", "朱鸢"}:
+            start_time = GachaLog.format_time("2026-07-29 06:00:00")
+            if gacha_time >= start_time:
+                return False
         return True
 
     async def get_all_5_star_items(self, data: List[GachaItem], assets: "AssetsService", pool_name: str = "代理人调频"):
