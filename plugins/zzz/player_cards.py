@@ -326,12 +326,14 @@ class RenderTemplate:
         artifacts, valid_total = self.find_artifacts(equip_plan_info)
         artifact_total_score: float = sum(artifact.score for artifact in artifacts)
         artifact_total_score = round(artifact_total_score, 1)
-        artifact_total_score_label: str = equip_plan_info.equip_rating or "E"
+        artifact_total_score_label: str = (equip_plan_info.equip_rating if equip_plan_info else None) or "E"
         artifact_total_score_class: str = Artifact.get_score_class(artifact_total_score_label)
         # 评分规则: 1=官方规则 3=用户自定义规则
-        score_rule_type = equip_plan_info.type
+        score_rule_type = equip_plan_info.type if equip_plan_info else None
         # 全部有效词条名称列表
-        valid_property_names = [prop.name for prop in equip_plan_info.plan_effective_property_list]
+        valid_property_names = (
+            [prop.name for prop in equip_plan_info.plan_effective_property_list] if equip_plan_info else []
+        )
 
         skills_map = [0, 2, 5, 1, 3, 4]
         data = {
@@ -383,8 +385,19 @@ class RenderTemplate:
             data["equipment"] = self.assets_service.weapon.icon(c.weapon.id).as_uri()
         return data
 
-    def find_artifacts(self, equip_plan_info: ZZZCalculatorCharacterEquipPlanInfo) -> Tuple[List["Artifact"], int]:
+    def find_artifacts(
+        self, equip_plan_info: Optional[ZZZCalculatorCharacterEquipPlanInfo]
+    ) -> Tuple[List["Artifact"], int]:
         """根据 equip_plan_info 构造带评分的遗器列表，并统计有效词条数"""
+        if not equip_plan_info:
+            artifacts = [
+                Artifact(
+                    equipment=equip,
+                    valid_properties=[False] * len(equip.properties),
+                )
+                for equip in self.character.equip
+            ]
+            return artifacts, 0
         effective_property_ids = {prop.id for prop in equip_plan_info.plan_effective_property_list}
         valid_total = equip_plan_info.valid_property_cnt
         artifacts: List["Artifact"] = []
