@@ -37,6 +37,8 @@ class ZZZSpeciality(IntEnum):
     """ 防护 """
     RUPTURE = 6
     """ 命破 """
+    ARMORER = 7
+    """ 锋御 """
 
 
 class ZZZRank(str, Enum):
