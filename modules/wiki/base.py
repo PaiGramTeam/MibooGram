@@ -7,7 +7,7 @@ from httpx import AsyncClient
 
 
 class WikiModel:
-    BASE_URL = "https://zzz-res.paimon.vip/data/"
+    BASE_URL = "https://zzz-res.miyoushe.de5.net/data/"
     BASE_PATH = Path("data/wiki-zzz")
     BASE_PATH.mkdir(parents=True, exist_ok=True)
 

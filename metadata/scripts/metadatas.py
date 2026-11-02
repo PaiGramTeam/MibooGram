@@ -23,8 +23,8 @@ RESOURCE_REPO = "PaiGramTeam/PaiGram_Resources"
 RESOURCE_BRANCH = "remote"
 RESOURCE_ROOT = "Resources"
 RESOURCE_DEFAULT_PATH = f"{RESOURCE_REPO}/{RESOURCE_BRANCH}/{RESOURCE_ROOT}/"
-RESOURCE_FAST_URL = f"https://genshin-res.paimon.vip/{RESOURCE_ROOT}/"
-RESOURCE_FightPropRule_URL = "https://fightproprule.paimon.vip/"
+RESOURCE_FAST_URL = f"https://genshin-res.miyoushe.de5.net/{RESOURCE_ROOT}/"
+RESOURCE_FightPropRule_URL = "https://fightproprule.miyoushe.de5.net/"
 
 client = AsyncClient()
 
