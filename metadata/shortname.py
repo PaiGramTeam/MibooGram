@@ -71,7 +71,7 @@ roles = {
     1641: ["菲欧妮", "Phoenix", "phoenix"],
 }
 not_real_roles = [2011, 2021, 1551]
-not_real_roles.extend([1631])
+not_real_roles.extend([])
 weapons = {
     12001: ["「月相」-望"],
     12002: ["「月相」-晦"],
